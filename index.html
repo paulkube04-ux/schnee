@@ -254,7 +254,12 @@ kbd { font-family: var(--f-u); font-weight: 600; font-size: .82em; letter-spacin
 @media (prefers-reduced-motion: reduce) { #phone.buzz, #heat.hot i.on, #dialog { animation: none; } }
 
 /* controller: a visible focus and a cursor on the big map */
-body.padui button:focus, body.padui input[type=range]:focus { outline: 3px solid var(--sodium); outline-offset: 3px; }
+/* controller: the chosen option gets a thick yellow frame inside the button (never cut off by a scrolling box), a dark edge so it shows on light
+   and dark buttons alike, a glow and a little more brightness. Checkboxes light up their whole row. */
+body.padui button:focus, body.padui input[type=range]:focus { outline: none; box-shadow: inset 0 0 0 3px #ffd23d, inset 0 0 0 5px rgba(9, 11, 20, .85), 0 0 0 2px #ffd23d, 0 0 18px 4px rgba(255, 210, 61, .55) !important; filter: brightness(1.15); }
+body.padui input[type=checkbox]:focus { outline: 3px solid #ffd23d; outline-offset: 2px; }
+.o-check { padding: 6px 8px; margin: 0 -8px; border-radius: 6px; }
+body.padui .o-check:focus-within { background: rgba(255, 210, 61, .14); box-shadow: inset 0 0 0 3px #ffd23d; }
 #padcur { position: fixed; left: -14px; top: -14px; width: 28px; height: 28px; border: 2px solid var(--sodium); border-radius: 50%; pointer-events: none; z-index: 70; box-shadow: 0 0 10px rgba(0, 0, 0, .8); }
 #padcur::after { content: ''; position: absolute; left: 11px; top: 11px; width: 4px; height: 4px; border-radius: 50%; background: var(--sodium); }
 
@@ -397,7 +402,7 @@ body.talking #job, body.talking #prompt, body.talking #speedo, body.talking #rad
 html, body { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; overscroll-behavior: none; touch-action: manipulation; }
 input, textarea { -webkit-user-select: text; user-select: text; -webkit-touch-callout: default; }
 #gl { touch-action: none; } img, canvas { -webkit-user-drag: none; }
-.o-full { margin: 14px 0 4px; }
+.o-full { margin: 14px 0 4px; background: rgba(11, 14, 26, .5); color: var(--ivory); border: 1px solid rgba(235, 226, 189, .4); border-radius: 4px; padding: 7px 16px 8px; font-family: var(--f-u); font-size: 17px; font-weight: 600; cursor: pointer; } .o-full:hover { border-color: var(--sodium); color: var(--sodium); }
 
 /* phone held sideways: the receipt goes wide, items on the left, total and buttons on the right, so "Nächste Nacht" is always on screen */
 @media (max-height: 560px) {
@@ -3276,19 +3281,42 @@ function updPolice(dt) {
 }
 function dlgBust() {
   G.stats.busts++;
+  // caught while the safe is still opening: nothing comes out of it any more, the money stays in the bank
+  const robbing = !!G.heist; if (G.heist) { const h = G.heist; G.heist = null; setTask(''); mkShow(h.b.mk, false); }
   const had = G.stock, hide = G.cs.hide && Math.random() < .6, loot = G.loot;
   const calm = () => { G.heat = 0; G.escape = 0; G.chaseMax = 0; for (const c of COPS) if (c.on) { c.mode = 'patrol'; const ns = nearestSeg(c.x, c.y, true, 3); if (ns) { c.nn = -1; c.pn = ns.seg.a; } } };
   const book = (extra) => {
-    if (loot) { G.loot = 0; G.stats.busts++; const f = pay(600, 'fines'); addPts(4, 'Bankraub'); toast('Die Beute ist weg: ' + eur0(loot) + '. Dazu ' + eur0(f) + ' Strafe.', 'bad'); }
+    // caught after a bank job: the loot, every cent you carry and all the goods in the car are seized. What sits in the warehouse stays yours
+    if (loot || robbing) {
+      const cash = Math.max(0, G.money), goods = G.stock; G.loot = 0; G.stats.busts++;
+      if (cash > 0) pay(cash, 'fines'); G.stock = 0; G.orders.slice().forEach(dropOrder); addPts(4, 'Bankraub'); sfx('bad');
+      toast('Alles beschlagnahmt: ' + (loot ? 'die Beute (' + eur0(loot) + '), ' : '') + 'dein ganzes Geld (' + eur(cash) + ')' + (goods ? ' und ' + goods + (goods === 1 ? ' Päckchen' : ' Päckchen') + ' aus dem Auto' : '') + '. Das Lager haben sie nicht gefunden.', 'bad');
+      calm(); return;
+    }
     if (had && !hide) { repChange(-10, 'Die Bullen haben MEINE Ware? Dit wirst du mir ersetzen.'); G.debt += had * 20; if (!G.debtDue) G.debtDue = G.clock + 90; G.stock = 0; G.orders.slice().forEach(dropOrder); const f = pay(350 + had * 50, 'fines'); addPts(3 + extra, 'Ware im Kofferraum'); toast('Ware weg, ' + eur0(f) + ' Strafe. Onkel Mischa wird nicht begeistert sein.', 'bad'); sfx('bad'); }
     else { pay(60, 'fines'); addPts(1 + extra, 'Verkehrskontrolle'); toast(had ? 'Sie haben das Geheimfach nicht gefunden. 60 € Verwarngeld.' : 'Nichts gefunden. 60 € Verwarngeld.', had ? 'good' : ''); }
     calm();
   };
+  // after a bank job there is nothing to talk about: no bribe, no running. You are arrested on the spot
+  if (!loot && !robbing && G.heat >= 5) {          // five stars: more is not possible, and nobody lets you drive off again
+    const m0 = G.money, s0 = G.stock, p0 = G.pts; book(1); const lost = Math.round((m0 - G.money) * 100) / 100, gone = s0 - G.stock;
+    dialog({ kind: 'cop', tag: 'Festnahme', title: 'Polizei Berlin, Abschnitt 15', text: '„Hände aufs Lenkrad! Aussteigen, langsam!“ Fünf Sterne, die halbe Hundertschaft steht um dein Auto. Diesmal gibt es nichts zu verhandeln.',
+      meta: (gone ? gone + ' Päckchen beschlagnahmt, ' : hide && had ? 'Das Geheimfach haben sie nicht gefunden. ' : '') + eur(lost) + ' Strafe, ' + (G.pts - p0) + ' Punkte in Flensburg.',
+      opts: [{ label: 'Weiter', esc: 1, fn: () => { } }] });
+    return;
+  }
+  if (loot || robbing) {
+    const cash = Math.max(0, G.money), goods = G.stock; book(0);
+    dialog({ kind: 'cop', tag: 'Festnahme', title: 'Polizei Berlin, Abschnitt 15', text: '„Hände aufs Lenkrad! Aussteigen, langsam!“ Zwei Wagen quer vor dir, einer hinter dir. Diesmal gibt es nichts zu verhandeln.',
+      meta: 'Beschlagnahmt: ' + (loot ? 'die Beute (' + eur0(loot) + '), ' : '') + 'dein ganzes Geld (' + eur(cash) + ')' + (goods ? ' und ' + goods + ' Päckchen aus dem Auto' : '') + '. 4 Punkte in Flensburg. Das Lager haben sie nicht gefunden.',
+      opts: [{ label: 'Weiter', esc: 1, fn: () => { } }] });
+    return;
+  }
   dialog({
     kind: 'cop', tag: 'Verkehrskontrolle', title: COPS.some(c => c.on && c.civ && c.near < 15) ? 'Zivilfahnder, LKA Berlin' : 'Polizei Berlin, Abschnitt 15', text: '„Schönen guten Abend. Führerschein, Fahrzeugpapiere. Und machen Sie bitte mal den Kofferraum auf.“', meta: (loot ? 'Auf dem Rücksitz: eine Sporttasche mit ' + eur0(loot) + '. ' : '') + (had ? 'Im Kofferraum: ' + had + ' Päckchen' + (G.cs.hide ? ' (Geheimfach)' : '') : 'Der Kofferraum ist sauber.'),
     opts: [
       { label: 'Kooperieren', sub: had ? 'Das wird teuer' : 'Du hast nichts zu verbergen', fn: () => book(0) },
-      { label: 'Einen Schein rüberschieben', sub: '200 €, fifty-fifty', dis: G.money < 200, fn: () => { pay(200, 'fines'); if (Math.random() < .5) { toast('„Schönen Abend noch.“', 'good'); calm(); } else { toast('„Bestechung. Auch noch.“', 'bad'); book(1); } } },
+      { label: 'Einen Schein rüberschieben', sub: loot || robbing ? 'Mit Bankgeld im Auto? Keine Chance' : '200 €, fifty-fifty', dis: G.money < 200 || loot > 0 || robbing, fn: () => { pay(200, 'fines'); if (Math.random() < .5) { toast('„Schönen Abend noch.“', 'good'); calm(); } else { toast('„Bestechung. Auch noch.“', 'bad'); book(1); } } },
       { label: 'Vollgas', sub: 'Fahndung steigt', fn: () => { G.heatCd = 0; addHeat(1, 'Flucht aus der Kontrolle!'); for (const c of COPS) if (c.on) { c.rev = 0; c.vx = c.vy = 0; c.re = 1.6; c.tx = c.x; c.ty = c.y; } PL.vx = Math.cos(PL.a) * 13; PL.vy = Math.sin(PL.a) * 13; } },
     ]
   });
@@ -3309,7 +3337,7 @@ function checkWreck() {
   if (G.dmg >= 100 && G.mode === 'play') {
     const w = POI.werk.slice().sort((a, b) => hyp(a.x - PL.x, a.y - PL.y) - hyp(b.x - PL.x, b.y - PL.y))[0];
     dialog({ kind: 'werk', tag: 'Totalschaden', title: 'Die Karre ist hin', text: 'Es qualmt aus der Haube. Der Abschlepper kommt in zwanzig Minuten. Sagt er.', meta: G.fare ? 'Dein Fahrgast steigt wortlos aus.' : '',
-      opts: (G.kit ? [{ label: 'Werkzeugkoffer auspacken', sub: 'flickt ein Drittel, du fährst einfach weiter', fn: () => useKit(true) }] : []).concat([{ label: 'Abschleppen lassen', sub: '120 € und eine halbe Stunde', fn: () => { pay(120, 'shop'); G.clock += 30; G.dmg = 35; G.heat = 0; G.chaseMax = 0; if (G.fare) { rmMarker(G.fare.mk); G.fare = null; } PL.x = w.x; PL.y = w.y; PL.vx = PL.vy = 0; CAM.x = PL.x; CAM.y = PL.y; toast('Notdürftig geflickt. ' + w.name + ' kann mehr.'); } }]) });
+      opts: (G.kit ? [{ label: 'Werkzeugkoffer auspacken', sub: 'flickt ein Drittel, du fährst einfach weiter', fn: () => useKit(true) }] : []).concat([{ label: 'Abschleppen lassen', sub: '120 € und eine halbe Stunde', fn: () => { pay(120, 'shop'); G.clock += 30; G.dmg = 35; if (G.loot > 0) { toast('Beim Abschleppen ist die Sporttasche weg. Der Fahrer guckt sehr unschuldig.', 'bad'); G.loot = 0; } if (G.heist) { G.heist = null; setTask(''); } G.heat = 0; G.chaseMax = 0; if (G.fare) { rmMarker(G.fare.mk); G.fare = null; } PL.x = w.x; PL.y = w.y; PL.vx = PL.vy = 0; CAM.x = PL.x; CAM.y = PL.y; toast('Notdürftig geflickt. ' + w.name + ' kann mehr.'); } }]) });
   }
 }
 /* police contact really hurts: patrol car < van < water cannon, scaled by your car's armour and weight */
@@ -3501,8 +3529,8 @@ function updBlocks(dt) {
 const SKID = { n: 700, i: 0, last: null };
 function initSkid() {
   const g = new THREE.BufferGeometry(); SKID.pos = new Float32Array(SKID.n * 18); g.setAttribute('position', new THREE.BufferAttribute(SKID.pos, 3));
-  SKID.mesh = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ color: 0x07080c, transparent: true, opacity: .62, depthWrite: false, side: THREE.DoubleSide }));
-  SKID.mesh.frustumCulled = false; SKID.mesh.renderOrder = 1; scene.add(SKID.mesh);
+  SKID.mesh = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ color: 0x07080c, transparent: true, opacity: .62, depthWrite: false, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -8, polygonOffsetUnits: -16 }));      // pulled further forward than road and markings, so it never flickers into them
+  SKID.mesh.frustumCulled = false; SKID.mesh.renderOrder = 6; scene.add(SKID.mesh);
   const sg = new THREE.BufferGeometry(); SKID.spos = new Float32Array(90 * 3).fill(-999); SKID.svel = new Float32Array(90 * 3); SKID.slife = new Float32Array(90); SKID.si = 0;
   sg.setAttribute('position', new THREE.BufferAttribute(SKID.spos, 3));
   SKID.smoke = new THREE.Points(sg, new THREE.PointsMaterial({ map: TEX.glow, color: 0x6f7590, size: 4.2, blending: THREE.AdditiveBlending, transparent: true, depthWrite: false, opacity: .5 }));
@@ -3515,7 +3543,7 @@ function updSkid(dt) {
   if (slide && PL.surf <= 1 && SKID.last) {
     for (let w = 0; w < 2; w++) {
       const a = SKID.last[w], b = wheels[w], dx = b[0] - a[0], dy = b[1] - a[1], l = hyp(dx, dy); if (l < .05 || l > 3) continue;
-      const nx = -dy / l * .2, ny = dx / l * .2, o = SKID.i * 18, P = SKID.pos, h = .13;
+      const nx = -dy / l * .2, ny = dx / l * .2, o = SKID.i * 18, P = SKID.pos, h = .145;
       const q = [a[0] + nx, a[1] + ny, b[0] + nx, b[1] + ny, b[0] - nx, b[1] - ny, a[0] + nx, a[1] + ny, b[0] - nx, b[1] - ny, a[0] - nx, a[1] - ny];
       for (let j = 0; j < 6; j++) { P[o + j * 3] = q[j * 2]; P[o + j * 3 + 1] = h; P[o + j * 3 + 2] = -q[j * 2 + 1]; }
       SKID.i = (SKID.i + 1) % SKID.n;
@@ -4177,7 +4205,7 @@ function startShift(admin) {
 }
 function endShift(why) {
   if (G.over) return; G.over = true; G.mode = 'end'; if (DLG) { DLG = null; $('dialog').hidden = true; }
-  if (G.race) endRace(false, null, true); if (G.loot > 0) lootSafe('Im Berufsverkehr untergetaucht.');
+  if (G.race) endRace(false, null, true); if (G.loot > 0) { if (G.heat > 0) G.loot = 0; else lootSafe('Im Berufsverkehr untergetaucht.'); }          // still being chased at dawn: the bag is gone
   const s = G.stats, lappen = why === 'lappen', tut = G.tutor;
   if (G.debt > 0) { const v = Math.min(G.debt, G.money); G.money -= v; G.debt = Math.round((G.debt - v) * 100) / 100; s.mischaEnd = v; if (G.debt > 0 && !tut) G.rep = Math.max(0, G.rep - 8); }
   if (tut) {                                         // the rental bill; whatever happened, enough is left for a first car of your own
@@ -5272,19 +5300,25 @@ function dlgRace(m) {
     { label: 'Ohne mich', esc: 1, fn: () => { say(m.x, m.y, pick(['Schisser!', 'Dacht ick mir.', 'Vielleicht nächstes Mal.'])); rmMarker(m); } }] });
 }
 function startRace(m, stake) {
-  const R = m.ref.R, sp = m.ref.sp, lo = sp ? sp.dist[0] : 520, hi = sp ? sp.dist[1] : 950; let fin = null, r = null;
-  // a finish line somewhere in a ring around the start; the route there has to have the right length
-  const ring = W.spotSegs.filter(sg => { const d = hyp((sg.ax + sg.bx) / 2 - PL.x, (sg.ay + sg.by) / 2 - PL.y); return d > lo * .5 && d < hi * .95 && sg.len > 20; });
-  for (let k = 0; k < 40 && !fin && ring.length; k++) { const sg = pick(ring), d = curbSpot(sg, rnd(8, sg.len - 8), Math.random() < .5 ? 1 : -1); r = routeBetween(PL.x, PL.y, d.x, d.y); if (r && r.dist > lo && r.dist < hi && !MK.some(q => hyp(q.x - d.x, q.y - d.y) < 20)) fin = d; }
+  const R = m.ref.R, sp = m.ref.sp, lo = sp ? sp.dist[0] : 520, hi = sp ? sp.dist[1] : 950, s = m.spot, sg = s.seg, st = sg.st; let fin = null, r = null;
+  // the start is fixed at the marker: both cars side by side on the road there, the route measured from that point
+  const bx = sg.ax + sg.dx * s.t, by = sg.ay + sg.dy * s.t;
+  const ring = W.spotSegs.filter(q => { const d = hyp((q.ax + q.bx) / 2 - bx, (q.ay + q.by) / 2 - by); return d > lo * .5 && d < hi * .95 && q.len > 20; });
+  for (let k = 0; k < 40 && !fin && ring.length; k++) { const q = pick(ring), d = curbSpot(q, rnd(8, q.len - 8), Math.random() < .5 ? 1 : -1); r = routeBetween(bx, by, d.x, d.y); if (r && r.dist > lo && r.dist < hi && !MK.some(z => hyp(z.x - d.x, z.y - d.y) < 20)) fin = d; }
   if (!fin) { toast('„Heute nich. Zu viel los uff der Straße.“'); return; }
   if (stake) pay(stake);
   if (!RACER) RACER = new Racer();
-  const s = m.spot, o = RACER; o.setup(R);
-  o.x = s.x - s.seg.dy * s.side * 2.9; o.y = s.y + s.seg.dx * s.side * 2.9;
-  const p1 = r.pts[Math.min(1, r.pts.length - 1)]; o.a = Math.atan2(p1[1] - o.y, p1[0] - o.x); if (hyp(p1[0] - o.x, p1[1] - o.y) < 6) o.a = Math.atan2(s.seg.dy, s.seg.dx);
-  place(o.g, o.x, o.y, o.a);
+  const o = RACER; o.setup(R);
+  // which way along the street the route leaves: that is where both cars point
+  let p1 = r.pts.find(p => hyp(p[0] - bx, p[1] - by) > 6) || r.pts[r.pts.length - 1];
+  const dir = (p1[0] - bx) * sg.dx + (p1[1] - by) * sg.dy >= 0 ? 1 : -1, hx = sg.dx * dir, hy = sg.dy * dir, ha = Math.atan2(hy, hx), off = clamp(st.w * .38, 1.5, 2.7);
+  // you on the right-hand lane, the opponent on the left, level with each other
+  PL.x = bx + hy * off; PL.y = by - hx * off; PL.a = ha; PL.vx = PL.vy = PL.vf = PL.vr = 0; PL.steer = 0; if ('drift' in PL) PL.drift = 0;
+  o.x = bx - hy * off; o.y = by + hx * off; o.a = ha; place(o.g, o.x, o.y, o.a);
+  place(PLG, PL.x, PL.y, PL.a); CAM.x = PL.x; CAM.y = PL.y; CAM.yaw = PL.a;
+  for (const t of TRAF) if (t.on && hyp(t.x - bx, t.y - by) < 14) t.kill();            // clear the grid
   G.race = { R, sp, who: R.who, stake, spot: s, fin: mkMarker('fin', fin, { name: 'Ziel' }, 8), opp: o, t: 0, go: false, d0: r.dist };
-  rmMarker(m); G.freeze = 3.3; G.gpsPick = null; G.routeT = 0; PL.vx = PL.vy = PL.vf = PL.vr = 0; G.race.beep = 4;
+  rmMarker(m); G.freeze = 3.3; G.gpsPick = null; G.routeT = 0; G.race.beep = 4;
   if (G.offer) answerOffer(false, true);
 }
 const raceLine = () => G.race ? 'Rennen gegen ' + G.race.who + (G.race.stake ? ' · Einsatz ' + eur0(G.race.stake) : '') : '';
@@ -5335,7 +5369,7 @@ function dlgBank(b) {
   dialog({
     kind: 'bank', tag: 'Sparkasse', title: b.name, re: () => dlgBank(b),
     text: done ? 'Flatterband, Blaulicht, ein Azubi fegt Scherben zusammen. Hier ist heute nichts mehr zu holen.' : 'Die Filiale ist dunkel, der Automatenraum ist offen. Hinter der Scheibe steht der Nachttresor. Eine Kamera guckt in die falsche Richtung.',
-    meta: 'Ein Überfall bringt mehrere Tausend Euro, aber sofort fünf Sterne. Die Beute gehört dir erst, wenn du alle abgehängt hast. Wirst du erwischt, ist sie weg.',
+    meta: 'Ein Überfall bringt mehrere Tausend Euro, aber sofort fünf Sterne. Die Beute gehört dir erst, wenn du alle abgehängt hast. Wirst du erwischt, ist alles weg: die Beute, dein ganzes Geld und die Ware im Auto. Nur das Lager bleibt.',
     opts: [
       { label: 'Tresor aufbrechen', sub: done ? 'heute schon ausgeräumt' : G.fare ? 'nicht mit Fahrgast im Auto' : G.loot > 0 ? 'erst die letzte Beute in Sicherheit bringen' : 'sieben Sekunden stehen bleiben, dann rennen', dis: !!done || !!G.fare || G.loot > 0, fn: () => startHeist(b) },
       { label: 'Kontoauszug ziehen', sub: 'kostenlos', stay: 1, fn: () => toast('Kontostand: ' + eur(G.money) + '. Verwendungszweck der letzten Buchung: „Taxi“.') },
@@ -5360,7 +5394,7 @@ function endHeist(f) {
   if (sum > 0) { G.loot += sum; sfx('cash'); pop('BEUTE ' + eur0(sum), 'plus'); toast('Beute im Kofferraum: ' + eur0(sum) + '. Sie gehört erst dir, wenn du die Polizei abgehängt hast.', 'good'); rumble(.6, .6, 300); }
   else toast('Zu früh abgehauen. Kein Cent, aber die ganze Stadt sucht dich.', 'bad');
 }
-function lootSafe(msg) { if (G.loot <= 0) return; const l = G.loot; G.loot = 0; G.stats.heistEur += l; earn(l, msg || 'Abgehängt. Die Beute gehört dir:'); }
+function lootSafe(msg) { if (G.loot <= 0 || G.heat > 0) return; const l = G.loot; G.loot = 0; G.stats.heistEur += l; earn(l, msg || 'Abgehängt. Die Beute gehört dir:'); }
 /* the bank marker stands right at the house front of the branch (the shop front that carries its name), not out at the kerb */
 function bankFront(b) {
   let best = null, bd = 45;
