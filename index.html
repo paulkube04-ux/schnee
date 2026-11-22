@@ -2944,7 +2944,14 @@ function liveSpot(S) {
   const tot = S.dur * S.files.length, t = (((now_s() - S.t0) % tot) + tot) % tot, i = Math.min(S.files.length - 1, t / S.dur | 0);
   return [i, t - i * S.dur];
 }
-function filePart(S, i, off) { S.part = i; S.seek = off; S.el.src = S.files[i]; }
+/* where the songs are: normally in music/, but on some uploads they end up next to index.html. One quick look decides */
+const MUS = { st: '', root: false };
+function musProbe() {
+  if (MUS.st) return; MUS.st = 'probe'; const f = STATIONS.find(x => x && x.files).files[0];
+  const ok = u => fetch(u, { method: 'HEAD', cache: 'no-store' }).then(r => r.ok).catch(() => false);
+  ok(f).then(a => a ? (MUS.st = 'ok') : ok(f.replace('music/', '')).then(b => { MUS.st = 'ok'; MUS.root = b; }));
+}
+function filePart(S, i, off) { S.part = i; S.seek = off; S.el.src = MUS.root ? S.files[i].replace('music/', '') : S.files[i]; }
 function fileEl(S) {
   if (S.el || !AU.ctx) return S.el;
   const el = S.el = new Audio(); el.crossOrigin = 'anonymous'; el.preload = 'auto'; S.part = -1;
@@ -2961,7 +2968,7 @@ function fileEl(S) {
 function fileSync() {
   for (let i = 1; i < STATIONS.length; i++) {
     const S = STATIONS[i]; if (!S.files) continue;
-    const want = i === AU.radio && !S.bad && AU.ctx && AU.ctx.state === 'running' && radioAllowed();
+    const want = i === AU.radio && !S.bad && AU.ctx && AU.ctx.state === 'running' && radioAllowed(); if (want && MUS.st !== 'ok') { musProbe(); continue; }
     if (want) {
       const el = fileEl(S); if (!el.paused) continue;
       const [p, t] = liveSpot(S);
@@ -4500,8 +4507,8 @@ const ACTS = [['up', 'Gas'], ['down', 'Bremse, rückwärts'], ['left', 'Links le
 const DEF_KB = { up: ['KeyW', 'ArrowUp'], down: ['KeyS', 'ArrowDown'], left: ['KeyA', 'ArrowLeft'], right: ['KeyD', 'ArrowRight'], hb: ['Space'], use: ['KeyE'], horn: ['KeyH'], turbo: ['KeyT'], kit: ['KeyF'], yes: ['KeyJ'], no: ['KeyN'], cancel: ['KeyX'], radio: ['KeyR'], gps: ['KeyG'], map: ['KeyM'], cam: ['KeyC'], pov: ['KeyV'], pause: ['KeyP'] };
 const DEF_PAD = { up: 'r2', down: 'l2', hb: 'l2', use: 'a', horn: 'b', turbo: 'l1', kit: 'x', yes: 'up', no: 'down', cancel: 'r3', radio: 'right', gps: 'left', map: 'share', cam: 'y', pov: '', pause: 'opt' };
 const HOLD = { up: 1, down: 1, left: 1, right: 1, hb: 1 };
-const OPT = { v: 2, pro: false, fake: true, cam: 2, kb: JSON.parse(JSON.stringify(DEF_KB)), pad: Object.assign({}, DEF_PAD), kl: {} };
-try { const o = JSON.parse(localStorage.getItem('schneetreiben-opt') || '{}'); if (o.kb) for (const k in DEF_KB) if (Array.isArray(o.kb[k])) OPT.kb[k] = o.kb[k]; if (o.pad) for (const k in DEF_PAD) if (typeof o.pad[k] === 'string') OPT.pad[k] = o.pad[k]; OPT.pro = !!o.pro; OPT.fake = o.fake === undefined ? true : !!o.fake;          // made-up shop names unless you switch the real ones on if (o.cam >= 0 && o.cam < 4) OPT.cam = o.cam; if (o.kl) OPT.kl = o.kl;
+const OPT = { v: 3, pro: false, fake: true, cam: 3, kb: JSON.parse(JSON.stringify(DEF_KB)), pad: Object.assign({}, DEF_PAD), kl: {} };
+try { const o = JSON.parse(localStorage.getItem('schneetreiben-opt') || '{}'); if (o.kb) for (const k in DEF_KB) if (Array.isArray(o.kb[k])) OPT.kb[k] = o.kb[k]; if (o.pad) for (const k in DEF_PAD) if (typeof o.pad[k] === 'string') OPT.pad[k] = o.pad[k]; OPT.pro = !!o.pro; OPT.fake = o.fake === undefined ? true : !!o.fake; /* made-up shop names unless you switch the real ones on */ if (o.v >= 3 && o.cam >= 0 && o.cam < 4) OPT.cam = o.cam; /* older settings: the camera starts behind the car */ if (o.kl) OPT.kl = o.kl;
   if (!(o.v >= 2) && OPT.pad.down === 'r1' && OPT.pad.hb === 'l2') OPT.pad.down = 'l2';          // the layout before brake and drift shared a button
 } catch (e) { }
 function goFull(asked) {
