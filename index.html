@@ -706,7 +706,7 @@ body.spar * { backdrop-filter: none !important; -webkit-backdrop-filter: none !i
   <div id="padcur" hidden></div>
   <div class="legend">
     <span><i class="r" style="--c:#ffd23d"></i>Fahrgast</span><span data-u="lauf"><i class="r" style="--c:#ffffff"></i>VIP</span><span><i class="r" style="--c:#7fe3ff"></i>Lieferung</span><span><i style="--c:#b56bff"></i>Ticker</span>
-    <span><i style="--c:#3dffa0"></i>Späti</span><span><i style="--c:#ff8a3d"></i>Werkstatt</span><span data-u="lager"><i style="--c:#6b8cff"></i>Lager</span><span data-u="lager"><i style="--c:#ff6bf0"></i>Großticker</span><span data-u="bank"><i style="--c:#e6c86a"></i>Sparkasse</span>
+    <span><i style="--c:#3dffa0"></i>Mate</span><span><i style="--c:#ff8a3d"></i>Werkstatt</span><span data-u="lager"><i style="--c:#6b8cff"></i>Lager</span><span data-u="lager"><i style="--c:#ff6bf0"></i>Großticker</span><span data-u="bank"><i style="--c:#e6c86a"></i>Sparkasse</span>
     <span data-u="rev"><i class="r" style="--c:#ff3b5c"></i>Fremder Läufer</span><span data-u="lager"><i style="--c:#ff9f43;clip-path:polygon(50% 0,100% 100%,0 100%)"></i>Dein Läufer</span><span data-u="lager"><i class="r" style="--c:#2ee6d6"></i>Gefallen</span><span data-u="rev"><i class="r" style="--c:#ff9f43"></i>Mischa</span><span data-u="rev"><i class="r" style="--c:#ff2a2a"></i>Angriff</span><span data-u="rennen"><i class="r" style="--c:#ff5a3c"></i>Rennen</span><span><i class="r" style="--c:#d6d6e6"></i>Kiez-Begegnung</span><span><i class="r" style="--c:#3f7dff"></i>Polizei</span><span><i class="r" style="--c:#3dffa0"></i>Uber</span><span><i class="r" style="--c:#ff2a2a"></i>Inkasso</span><span><i class="r" style="--c:#ff4fa0"></i>Markierung</span><span><i class="b" style="--c:#ff4f9a"></i>Sperre: hier endet der Kiez</span>
     <span class="how">Ziehen verschiebt · Mausrad zoomt · Klick auf Punkt oder Straße: Navi dorthin</span>
   </div>
@@ -1878,12 +1878,13 @@ function mauerpark(stad) {
 }
 /* currywurst stand under the U2 viaduct at Eberswalder Straße */
 function imbiss() {
-  if (!W.via) return; const st = W.d.ust.find(u => /Eberswalder/.test(u[0])); if (!st) return;
-  const pr = W.via.project(st[1][0] / 10, st[1][1] / 10), o = W.via.at(Math.max(0, pr.s - 30), 1, 0, {});
+  if (!W.via) return;
+  // where Konnopke's really stands (from Moritz' map), turned to run along the viaduct above it
+  const KX = -411.6, KY = -18.5, pr = W.via.project(KX, KY), o = W.via.at(pr.s, 1, 0, {});      // on the viaduct's centre line, between the pillars, not out on the road
   const g = new THREE.Group(), kb = new THREE.Mesh(new THREE.BoxGeometry(6.5, 3.2, 3.2), new THREE.MeshLambertMaterial({ color: 0xd9962f })); kb.position.y = 1.6; kb.castShadow = true;
   const roof = new THREE.Mesh(new THREE.BoxGeometry(7.6, .25, 4.6), new THREE.MeshLambertMaterial({ color: 0x8a2a24 })); roof.position.y = 3.35;
   g.add(kb, roof);
-  for (const sd of [1, -1]) { const s = neonSign('CURRYWURST', '#ffd24a', 6.2, 1.1); s.position.set(0, 2.55, sd * 1.62); if (sd < 0) s.rotation.y = Math.PI; g.add(s); }
+  for (const sd of [1, -1]) { const s = neonSign('KONNOPKE', '#ffd24a', 6.2, 1.1); s.position.set(0, 2.55, sd * 1.62); if (sd < 0) s.rotation.y = Math.PI; g.add(s); }
   g.position.set(o.x, 0, -o.y); g.rotation.y = o.a; scene.add(g);
   const c = Math.cos(o.a), s = Math.sin(o.a); addColRing([o.x - c * 3.3 + s * 1.7, o.y - s * 3.3 - c * 1.7, o.x + c * 3.3 + s * 1.7, o.y + s * 3.3 - c * 1.7, o.x + c * 3.3 - s * 1.7, o.y + s * 3.3 + c * 1.7, o.x - c * 3.3 - s * 1.7, o.y - s * 3.3 + c * 1.7]);
   I.glow.add(o.x, o.y, .35, 0, 18, 1, 18, 0x8a6a1a);
@@ -2964,7 +2965,7 @@ function radioHud() { const el = $('radio'); if (!el) return; el.className = AU.
 function radioSet(i, quiet) {
   AU.radio = i; AU.step = 0; AU.next = 0;
   try { localStorage.setItem('schneetreiben-sender', i ? STATIONS[i].id : 'aus'); } catch (e) { }
-  const S = STATIONS[i]; if (!quiet) toast(!S ? 'Radio aus' : 'Radio: ' + S.n + ' · ' + S.d); radioHud(); fileSync();
+  const S = STATIONS[i]; if (!quiet) toast(!S ? 'Radio aus' : 'Radio: ' + S.n + ' · ' + S.d, 'radio'); radioHud(); fileSync();
 }
 function radioNext() {
   let i = AU.radio; do i = (i + 1) % STATIONS.length; while (i && !radioHas(i));
@@ -3072,6 +3073,10 @@ const setT = (el, v) => { if (el._v !== v) { el._v = v; el.textContent = v; } };
 /* messages come one at a time: a queue of at most three, the same text never twice, warnings before chatter */
 const TQ = []; let tqBusy = false, TEL = null;
 function toast(text, cls) {
+  if (cls === 'radio') {                              // switching stations: the new name replaces the old one at once, nothing waits in line
+    for (let i = TQ.length - 1; i >= 0; i--) if (TQ[i][1] === 'radio') TQ.splice(i, 1);
+    if (TEL && TEL.classList.contains('radio')) { TEL.textContent = text; TEL.classList.remove('out'); toastLife(TEL); return; }
+  }
   if ((TEL && TEL.textContent === text) || TQ.some(q => q[0] === text)) return;
   TQ.push([text, cls || '']);
   if (TQ.length > 3) { const i = TQ.findIndex(q => !/bad|cop/.test(q[1])); TQ.splice(i >= 0 ? i : 0, 1); }
@@ -3082,7 +3087,11 @@ function toastNext() {
   const q = TQ.shift(); if (!q) { tqBusy = false; TEL = null; return; } tqBusy = true;
   const d = document.createElement('div'); d.className = 'toast ' + q[1]; d.textContent = q[0]; $('toasts').prepend(d); TEL = d;
   while ($('toasts').children.length > 3) $('toasts').lastChild.remove();
-  const life = TQ.length ? 2300 : 3600; setTimeout(() => d.classList.add('out'), life); setTimeout(() => { d.remove(); if (TEL === d) TEL = null; toastNext(); }, life + 500);
+  toastLife(d);
+}
+function toastLife(d) {
+  clearTimeout(d._t1); clearTimeout(d._t2); const life = TQ.length ? 2300 : 3600;
+  d._t1 = setTimeout(() => d.classList.add('out'), life); d._t2 = setTimeout(() => { d.remove(); if (TEL === d) TEL = null; toastNext(); }, life + 500);
 }
 function pop(text, cls) {
   const d = document.createElement('div'); d.className = 'pop ' + (cls || ''); d.textContent = text; $('pops').appendChild(d); setTimeout(() => d.remove(), 1700);
@@ -3329,7 +3338,7 @@ function dlgDepot(d) {
 function dlgSpaeti(s) {
   const tb = tutBusy(), later = 'nach der Einführung';
   dialog({
-    kind: 'spaeti', tag: 'Späti', title: s.name, text: '„Na, Meister? Wat brauchste?“', meta: 'Kasse: ' + eur(G.money), re: () => dlgSpaeti(s),
+    kind: 'spaeti', tag: 'Mate', title: s.name, text: '„Na, Meister? Wat brauchste?“', meta: 'Kasse: ' + eur(G.money), re: () => dlgSpaeti(s),
     opts: [
       { label: 'Kiez-Mate', sub: '6 € · Turbo zum Mitnehmen · ' + G.mate + '/' + G.mateMax + ' dabei', dis: G.money < 6 || G.mate >= G.mateMax, stay: 1, fn: () => { pay(6, 'shop'); G.mate++; sfx('good'); toast('Mate eingepackt (' + G.mate + '/' + G.mateMax + '). ' + hint('turbo') + ' zündet den Turbo.', 'good'); } },
       { label: 'Rubbellos „Kiez-Kracher“', sub: tb ? later : '5 € · bis 10.000 € · noch ' + losLeft(s, 'k'), dis: tb || G.money < 5 || losLeft(s, 'k') <= 0, fn: () => buyLos(s, 'k') },
@@ -3436,7 +3445,7 @@ function dlgInkasso() {
 const TURBO_T = 6;
 function useTurbo() {
   if (G.mode !== 'play' || G.turbo > 0) return;
-  if (G.mate <= 0) { toast('Keine Mate mehr dabei. Ab zum Späti.'); sfx('bad'); return; }
+  if (G.mate <= 0) { toast('Keine Mate mehr dabei. Grüne Säulen verkaufen welche.'); sfx('bad'); return; }
   G.mate--; G.turbo = TURBO_T; G.usedTurbo = true; CAM.shake = Math.max(CAM.shake, .35); sfx('turbo'); pop('TURBO', 'plus'); rumble(.5, .8, 350); setTimeout(() => rumble(.08, .3, (TURBO_T - .4) * 1000), 380);
 }
 
@@ -3461,7 +3470,7 @@ function setCam(mode, quiet) {
 }
 function camCycle() { setCam((CAM.mode + 1) % 4); }
 function togglePov() { setCam(CAM.mode === 0 ? (CAM.last || 2) : 0); }
-function cycleGps() { if (tutBusy()) { toast('In der ersten Nacht stellt Kalle das Navi ein.'); return; } G.gpsMode = (G.gpsMode + 1) % 4; G.gpsPick = null; G.routeT = 0; toast('Navi: ' + ['aus (nur Aufträge)', 'nächster Ticker', 'nächste Werkstatt', 'nächster Späti'][G.gpsMode]); }
+function cycleGps() { if (tutBusy()) { toast('In der ersten Nacht stellt Kalle das Navi ein.'); return; } G.gpsMode = (G.gpsMode + 1) % 4; G.gpsPick = null; G.routeT = 0; toast('Navi: ' + ['aus (nur Aufträge)', 'nächster Ticker', 'nächste Werkstatt', 'nächste Mate'][G.gpsMode]); }
 
 /* ---------- cancel whatever you are on ---------- */
 function dlgCancel() {
@@ -3473,7 +3482,7 @@ function dlgCancel() {
   } });
   if (G.race) opts.push({ label: 'Rennen aufgeben', sub: G.race.stake ? 'Einsatz weg: ' + eur0(G.race.stake) : 'zählt als verloren', fn: () => endRace(false, 'Aufgegeben.') });
   for (const o of G.orders) opts.push({ label: 'Lieferung absagen: ' + o.spot.name, sub: o.qty + ' Päckchen bleiben im Kofferraum, Mischa ist sauer', fn: () => { dropOrder(o); laufEnd('Lieferung abgesagt.'); repChange(-6, 'Abgesagt? Meine Kunden sagt man nich ab.'); sms(o.cust.n, 'Abgesagt?! Dann eben nicht.', 'bad'); G.nextOffer = Math.max(G.nextOffer, 20); } });
-  if ((G.gpsPick || G.gpsMode) && !tutBusy()) opts.push({ label: 'Navi-Ziel löschen', sub: G.gpsPick ? mkLabel(G.gpsPick) : ['', 'Depot', 'Werkstatt', 'Späti'][G.gpsMode], fn: () => { if (G.gpsPick && G.gpsPick.type === 'pin') rmMarker(G.gpsPick); G.gpsPick = null; G.gpsMode = 0; G.routeT = 0; } });
+  if ((G.gpsPick || G.gpsMode) && !tutBusy()) opts.push({ label: 'Navi-Ziel löschen', sub: G.gpsPick ? mkLabel(G.gpsPick) : ['', 'Ticker', 'Werkstatt', 'Mate'][G.gpsMode], fn: () => { if (G.gpsPick && G.gpsPick.type === 'pin') rmMarker(G.gpsPick); G.gpsPick = null; G.gpsMode = 0; G.routeT = 0; } });
   if (G.offer) opts.push({ label: 'Angebot auf dem Handy ablehnen', fn: () => answerOffer(false) });
   if (!opts.length) { toast('Du hast gerade keinen Auftrag.'); return; }
   if (opts.length > 2) opts.push({ label: 'Alles abbrechen', fn: () => { for (const o of opts.slice(0, -1)) o.fn(); } });
@@ -4329,7 +4338,7 @@ function hud() {
       (o.late ? 'Zu spät, 30 % Abzug' : (t / 60 | 0) + ':' + pad2(t % 60)) + ' · ' + m10(rt.snow && rt.snow.d) + (lack && !G.viaSrc ? ' · zu wenig Ware dabei' : '') + (G.orders.length > 1 ? ' · +' + (G.orders.length - 1) + ' weitere' : ''), o.late ? 0 : clamp(o.t / 90, 0, 1));
   } else jobRow('job-snow', '');
   if (G.race) jobRow('job-nav', '');                                    // the banner at the top shows the race
-  else jobRow('job-nav', nv ? 'Navi: ' + (G.gpsPick ? mkLabel(nv) : ['', 'Ticker', 'Werkstatt', 'Späti'][G.gpsMode]) : '', nv ? m10(rt.nav && rt.nav.d) : '', -1);
+  else jobRow('job-nav', nv ? 'Navi: ' + (G.gpsPick ? mkLabel(nv) : ['', 'Ticker', 'Werkstatt', 'Mate'][G.gpsMode]) : '', nv ? m10(rt.nav && rt.nav.d) : '', -1);
   if (nv && !G.race) $('job-nav').style.setProperty('--jc', MKCSS[nv.type] || '#b56bff');      // the stripe takes the colour of where you are headed, like the line on the road
   $('job-nav').classList.toggle('race', !!G.race); $('job-x').hidden = !(f || o || nv || G.race);
   // pointers at the screen edge, one per target that is out of view
@@ -4522,7 +4531,7 @@ function startShift(admin) {
   radioShuffle(); if (!radioHas(AU.radio)) radioSet(1, true); radioHud(); refreshHints();
   G.mode = 'play'; bizStart(); storyStart();
   if (admin) toast('Admin-Modus: unendlich Geld, alles freigeschaltet. Panel links, Taste ^ blendet es ein und aus.', 'good');
-  else { if (lent) toast('Pleite? Die Zentrale streckt dir 20 € Wechselgeld vor.'); if (AU.radio && !G.tutor) toast('Radio: ' + radioName() + ' · ' + hint('radio') + ' wechselt den Sender'); }
+  else { if (lent) toast('Pleite? Die Zentrale streckt dir 20 € Wechselgeld vor.'); if (AU.radio && !G.tutor) toast('Radio: ' + radioName() + ' · ' + hint('radio') + ' wechselt den Sender', 'radio'); }
 }
 function endShift(why) {
   if (G.over) return; G.over = true; G.mode = 'end'; if (DLG) { DLG = null; $('dialog').hidden = true; }
@@ -4540,7 +4549,7 @@ function endShift(why) {
   const rank = lappen ? 'Fußgänger' : profit < 0 ? 'Pleitegeier' : s.deliv === 0 ? 'Ehrliche Haut' : profit < 400 ? 'Kiezkurier' : profit < 1100 ? 'Schneekönig vom Helmi' : profit < 5000 ? 'Pate vom Prenzlberg' : 'Legende der Nacht';
   $('e-head').textContent = tut ? 'Erste Nacht geschafft' : lappen ? 'Lappen weg' : 'Feierabend';
   $('e-sub').textContent = tut ? 'Der Mietwagen geht zurück. Rudi hat was für dich in der Garage stehen.' : lappen ? 'Acht Punkte in Flensburg. Du gehst zu Fuß nach Hause. Morgen Nacht darfst du wieder.' : why === 'frueh' ? 'Für heute reicht’s. Du machst zu, bevor die Sonne aufgeht.' : 'Sechs Uhr. Die Sonne geht auf, die Bäcker machen auf, du machst zu.';
-  const rows = [['Taxifahrten', s.fares + ' ×', s.fareEur], ['Trinkgeld', '', s.tips], ['Lieferungen', s.deliv + ' ×', s.kokEur], ['Wareneinkauf', '', -s.buy], ['Bußgelder', s.busts ? s.busts + ' Kontrollen' : '', -s.fines], ['Späti, Werkstatt, Lager', '', -s.shop], ['Pfand', s.pfand + ' Flaschen', s.pfand * .25], ['Schichtziele', G.goals.length ? G.goals.filter(g => g.done).length + ' von 3' : '', s.goalEur], ['Drift-Bonus', '', s.driftEur], ['Rubbellos-Gewinne', '', s.losWin]];
+  const rows = [['Taxifahrten', s.fares + ' ×', s.fareEur], ['Trinkgeld', '', s.tips], ['Lieferungen', s.deliv + ' ×', s.kokEur], ['Wareneinkauf', '', -s.buy], ['Bußgelder', s.busts ? s.busts + ' Kontrollen' : '', -s.fines], ['Mate, Werkstatt, Lager', '', -s.shop], ['Pfand', s.pfand + ' Flaschen', s.pfand * .25], ['Schichtziele', G.goals.length ? G.goals.filter(g => g.done).length + ' von 3' : '', s.goalEur], ['Drift-Bonus', '', s.driftEur], ['Rubbellos-Gewinne', '', s.losWin]];
   if (s.races) rows.push(['Rennen', s.races + ' ×', s.raceEur]); if (s.heistEur) rows.push(['Beute aus der Sparkasse', '', s.heistEur]); if (s.lagerEur) rows.push(['Läufer-Kasse aus dem Lager', '', s.lagerEur]);
   if (s.laufEur) rows.push(['Lauf-Bonus', 'bis ×' + G.laufBest, s.laufEur]); if (s.karEur) rows.push(['Prämien', 'Karriere, Reviere', s.karEur]);
   if (s.robEur) rows.push(['Läufer abgezogen', s.rob + ' ×', s.robEur]); if (s.abzEur) rows.push(['Selbst abgezogen worden', '', -s.abzEur]);
@@ -4769,8 +4778,9 @@ function initGame() {
   for (let i = 0; i < 6; i++) { const el = document.createElement('div'); el.className = 'bub'; $('bubbles').append(el); BUB.push({ el, x: 0, y: 0, t: 0 }); }
   const mk = (kind, name, x, y, extra) => { let s = (extra && extra.on && spotOn(x, y, extra.on)) || spotNear(x, y); if (extra && extra.at) s = Object.assign({}, s, { x: extra.at[0], y: extra.at[1] }); s.name2 = s.name; const p = Object.assign({ name, x: s.x, y: s.y, spot: s }, extra || {}); p.mk = mkMarker(kind, s, p, 5.2); POI[kind].push(p); return p; };
   mk('depot', 'Onkel Mischas Garage', 120, 520); mk('depot', 'Ticker hinterm Getränkemarkt', 640, -880); mk('depot', 'Ticker an der Zionskirche', -905, -745);
-  mk('werk', 'Schrauber-Rudi', -860, -330); mk('werk', 'Kfz-Meister Yilmaz', 900, 250);
-  [['Späti am Eck', -700, -430], ['Späti 24/7', -110, 790], ['Kolle-Späti', 60, -560], ['Getränke Hoffmann', 450, -300], ['Tor-Späti', -560, -1280], ['Wichert-Späti', 220, 1010], ['Bötzow-Späti', 1000, -1000], ['Gleim-Späti', -900, 900]].forEach(a => mk('spaeti', a[0], a[1], a[2]));
+  mk('werk', 'Schrauber-Rudi', -848, -327); mk('werk', 'Kfz-Meister Yilmaz', 910, 303); mk('werk', 'Karren-Kurt', 733, -590);
+  // where to get a Mate: Spätis, but also bars and supermarkets, from Moritz' own map. Real name first, the invented one when 'Erfundene Ladennamen' is on
+  [['Rewaz', 'Rewas-Eck', 268, -480, 'Prenzlauer Allee'], ['Weinberg Weinhandlung', 'Weinhandlung Rebstock', 408, -860], ['Yard', 'Hinterhof-Bar', 136, -548], ['August Fengler', 'Bei August', -222, 128], ['Hola México', 'Hola Tijuana', -855, 691], ['Spätkauf', 'Spätkauf', -740, -852], ['Tante Käthe', 'Tante Grete', -1035, -31], ['REWE P-Ostsee', 'Markt an der Ostseestraße', 940, 1166], ['Willy Bresch', 'Willi Bräsig', 1032, -513, 'Greifswalder Straße'], ['Gegenüber', 'Gegenüber', -202, 1244], ['Lidl Prenzlauer', 'Discounter Prenzlauer Allee', 679, 677, 'Prenzlauer Allee'], ['Arnim-REWE', 'Markt am Arnimplatz', -581, 1124]].forEach(a => mk('spaeti', OPT.fake ? a[1] : a[0], a[2], a[3], a[4] ? { on: a[4] } : null));
   initBiz(mk); initStory(mk);
   initInput(); refreshHints(); kiezInit(); revInit();
   G.mode = 'title'; G.titleS = 200; PL.x = W.via ? W.via.p[0][0] : 0; PL.y = W.via ? W.via.p[0][1] : 0; CAM.x = PL.x; CAM.y = PL.y;
@@ -5607,15 +5617,15 @@ const TUT = [
   { t: 'Ausliefern', s: () => 'Der blauen Linie folgen, in der Säule halten, übergeben', mk: ['order'],
     tick: () => { if (!G.orders.length && !G.stats.deliv) tutGo(4, true); },
     ok: () => G.stats.deliv >= 1 },
-  { t: 'Mate holen', s: () => 'Zum Späti (grüne Säule) und eine Kiez-Mate kaufen', mk: ['spaeti'], nav: () => nearestOf(POI.spaeti).mk,
-    on: () => { P.seen.kalle = 1; if (G.money < 8) earn(10); talk('kalle', ['Läuft. Jetzt dit Wichtige: die Polizei. Streifen erkennste am blauen Fächer vor dem Auto. Da drin unter 70 bleiben und brav sein, dann lassen se dich in Ruhe.', 'Die Zivilen fahren normale Karren ohne Fächer. Der Polizeifunk aus der Garage zeigt dir ooch die. Und wenn se dich doch jagen: abhängen, bis die Sterne oben rechts weg sind.', 'Noch ’n Tipp: Hol dir beim Späti ’ne Mate. Wirste gleich brauchen.']); },
+  { t: 'Mate holen', s: () => 'Irgendwo eine Kiez-Mate holen (grüne Säule)', mk: ['spaeti'], nav: () => nearestOf(POI.spaeti).mk,
+    on: () => { P.seen.kalle = 1; if (G.money < 8) earn(10); talk('kalle', ['Läuft. Jetzt dit Wichtige: die Polizei. Streifen erkennste am blauen Fächer vor dem Auto. Da drin unter 70 bleiben und brav sein, dann lassen se dich in Ruhe.', 'Die Zivilen fahren normale Karren ohne Fächer. Der Polizeifunk aus der Garage zeigt dir ooch die. Und wenn se dich doch jagen: abhängen, bis die Sterne oben rechts weg sind.', 'Noch ’n Tipp: Hol dir irgendwo ’ne Mate, Späti, Kneipe, Supermarkt, egal. Grüne Säule. Wirste gleich brauchen.']); },
     ok: () => G.mate >= 1 || G.usedTurbo },
   { t: 'Turbo zünden', s: () => hint('turbo') + ' trinkt die Mate: sechs Sekunden Vollgas, und was im Weg steht, fliegt zur Seite', mk: [],
     ok: () => G.usedTurbo },
   { t: 'Schulden bei Mischa zahlen', s: () => 'Zurück zu einem Ticker, egal welchem: ' + eur0(G.debt) + ' sind offen', mk: ['depot'], nav: () => nearestOf(POI.depot).mk,
     on: () => { if (G.debt > 0) toast('Die zwei Päckchen waren auf K. Mischa will sein Geld.'); },
     ok: () => G.debt <= 0 || G.stats.mischa > 0 },
-  { t: 'Geschafft', s: () => '', mk: [], on: () => talk('kalle', ['Dit war’s. Den Rest der Nacht fährste allein: Fahrgäste, Bestellungen, Späti, Werkstatt, wie de willst. Steht jetzt alles uff der Karte. Um sechs is Feierabend, dann rechnet Miles ab.', 'Wenn’s dir reicht: Pause, „Feierabend machen“. Danach geht’s zu Rudi in die Garage, dein erstes eigenes Auto aussuchen.']), ok: () => true },
+  { t: 'Geschafft', s: () => '', mk: [], on: () => talk('kalle', ['Dit war’s. Den Rest der Nacht fährste allein: Fahrgäste, Bestellungen, Mate, Werkstatt, wie de willst. Steht jetzt alles uff der Karte. Um sechs is Feierabend, dann rechnet Miles ab.', 'Wenn’s dir reicht: Pause, „Feierabend machen“. Danach geht’s zu Rudi in die Garage, dein erstes eigenes Auto aussuchen.']), ok: () => true },
 ];
 /* hides and closes every marker the current step does not ask for, and brings them back afterwards */
 function tutLocks() {
@@ -7257,7 +7267,7 @@ const HELP = [
   { u: 'taxi', t: 'Taxi', l: () => ['Gelbe Säule: Fahrgast. Reinfahren und anhalten, dann geht das Fenster auf.', 'Die gelbe Linie führt zum Ziel. Wer schnell und ohne Kratzer ankommt, bekommt Trinkgeld.', 'Am Ende jeder Nacht zeigt der Bon, was übrig bleibt.'] },
   { u: 'taxi', t: 'Päckchen und Mischa', l: () => ['Ware gibt es an den Tickern (lila Säulen). Bestellungen kommen aufs Handy, ' + hint('yes') + ' nimmt an.', 'Blaue Säule: Kunde. Reinfahren, anhalten, übergeben. Zu spät zahlt weniger.', 'Auf K kaufen geht, aber Mischa will sein Geld bis zur genannten Uhrzeit. Sonst schickt er sein Inkasso.'] },
   { u: 'taxi', t: 'Polizei und Bußgelder', l: () => ['Streifen haben einen blauen Fächer vor dem Auto. Darin unter 70 bleiben und nichts anstellen.', 'Jagen sie dich, zeigen die Sterne oben rechts die Fahndung. Abhängen, bis alle Sterne weg sind.', 'Rote Ampeln und Blitzer kosten Bußgeld. Ab dem vierten Verstoß in einer Nacht gibt jeder weitere einen Stern.'] },
-  { u: 'taxi', t: 'Späti, Werkstatt, Garage', l: () => ['Späti (grüne Säule): Kiez-Mate. ' + hint('turbo') + ' trinkt sie: sechs Sekunden Turbo.', 'Werkstatt (orange Säule): repariert die Karre und verkauft Werkzeugkoffer. Mit ' + hint('kit') + ' flickst du unterwegs.', 'Nach jeder Nacht geht es in die Garage: Autos, Tuning, Lack, Hupen, Dachschmuck.'] },
+  { u: 'taxi', t: 'Mate, Werkstatt, Garage', l: () => ['Grüne Säule: Spätis, Kneipen und Supermärkte, die Kiez-Mate haben. ' + hint('turbo') + ' trinkt sie: sechs Sekunden Turbo.', 'Werkstatt (orange Säule): repariert die Karre und verkauft Werkzeugkoffer. Mit ' + hint('kit') + ' flickst du unterwegs.', 'Nach jeder Nacht geht es in die Garage: Autos, Tuning, Lack, Hupen, Dachschmuck.'] },
   { u: 'ziele', t: 'Ziele und Respekt', l: () => NEWS.ziele.l },
   { u: 'lauf', t: 'VIPs', l: () => NEWS.lauf.l },
   { u: 'rennen', t: 'Rennen', l: () => NEWS.rennen.l },
