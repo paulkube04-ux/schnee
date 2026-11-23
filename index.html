@@ -6438,7 +6438,7 @@ function updCity(dt) {
    Admin mode plays the run and the VIPs but keeps nothing.
    ============================================================ */
 const RANKS = [['Praktikant', 0], ['Aushilfe', 100], ['Nachtfahrer', 260], ['Kiezkutscher', 500], ['Stammfahrer', 850], ['Eckenkenner', 1300], ['Schichtleiter', 1900], ['Kiezgröße', 2700], ['Nachtbürgermeister', 3700], ['Kiezkönig', 5000], ['Graue Eminenz', 6800], ['Legende vom Prenzlberg', 9000]];
-const RANK_EUR = [0, 60, 100, 150, 220, 300, 400, 520, 660, 820, 1000, 1500];
+const RANK_EUR = [0, 30, 50, 70, 110, 150, 200, 260, 330, 410, 500, 750];
 const careerOn = () => !!P && !G.admin;
 const careerVis = () => careerOn() && unl('ziele');           // the first night counts quietly; ranks and medals show from the second
 const rankOf = xp => { let i = 0; while (i + 1 < RANKS.length && xp >= RANKS[i + 1][1]) i++; return i; };
@@ -6550,7 +6550,7 @@ function careerLoad() { if (P && !G.admin) { achCheck('retro'); KZ.owner = null;
 
 /* ---------- the Kiez as a collection: every street you have driven, every landmark you have passed ---------- */
 const KZ = { on: false, names: [], id: {}, pois: [], seen: new Set(), pseen: new Set(), owner: null, len: -1, n: -1, cand: null, sign: '', signT: -1, t: 0, xpPop: 0, xpT: -1 };
-const KZM = [[10, 40, 15], [25, 100, 30], [50, 250, 60], [75, 500, 100], [100, 1500, 250]];                      // percent of the streets, euros, Respekt
+const KZM = [[10, 20, 15], [25, 50, 30], [50, 120, 60], [75, 250, 100], [100, 750, 250]];                      // percent of the streets, euros, Respekt
 const kzHash = s => { let h = 2166136261; for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619); return ('000' + ((h >>> 0) % 1679616).toString(36)).slice(-4); };
 function kiezInit() {
   KZ.names = []; KZ.id = {}; KZ.pois = [];
@@ -6629,7 +6629,7 @@ const DAILY = [
   { t: '4 Uber in einer Nacht rammen', n: 4, v: () => G.stats.rammed },
   { t: '7 Kilometer in einer Nacht fahren', n: 7, v: () => Math.floor(G.stats.km) },
 ];
-const DAY_EUR = 200, DAY_XP = 60;
+const DAY_EUR = 100, DAY_XP = 60;
 const dayKey = () => { const d = new Date(); return String(d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate()); };
 const dayJob = () => { const L = DAILY.filter(j => !j.u || unl(j.u)); return L[(Math.imul(+dayKey(), 2654435761) >>> 0) % L.length]; };   // only tasks you can already do
 const dayOpen = () => careerVis() && P.tut >= 2 && P.day !== dayKey();
@@ -6941,7 +6941,7 @@ function revHit(r, d) {
   else toast(r.n + ': ' + cr.kurz + ' nur noch bei ' + h + ' %.', 'good');
 }
 function revTake(r) {
-  const cr = CREWS[r.crew], n = revCount(), v = 400 * n, who = r.runs[0];
+  const cr = CREWS[r.crew], n = revCount(), v = 200 * n, who = r.runs[0];
   P.rvo[r.id] = 1; delete P.rvh[r.id]; delete P.rvw[r.id]; G.money += v; G.stats.karEur += v; G.stats.took++; ups().push(['Revier', r.n]);
   banner('Revier übernommen', r.n, '+' + eur0(v) + ' · mehr Anfragen, und deine Läufer sind hier sicher', 'kiez'); addXp(200);
   for (const ref of G.rev.runners) if (ref.r === r && !ref.gone) { rmMarker(ref.mk); revFigOff(ref.fig); ref.gone = true; ref.back = 1e9; }
@@ -6953,7 +6953,7 @@ function revTake(r) {
 }
 function crewDown(id) {
   const cr = CREWS[id]; if (P.seen['cx' + id]) return; P.seen['cx' + id] = 1;
-  talk(cr.ch, cr.out, () => { const v = 800; G.stats.karEur += v; earn(v, 'Eine Bande weniger im Kiez:'); addXp(120); banner('Bande gibt auf', cr.n, cr.boss + ' kommt nicht wieder', 'rank'); saveGame(); });
+  talk(cr.ch, cr.out, () => { const v = 400; G.stats.karEur += v; earn(v, 'Eine Bande weniger im Kiez:'); addXp(120); banner('Bande gibt auf', cr.n, cr.boss + ' kommt nicht wieder', 'rank'); saveGame(); });
 }
 /* the two turns of the story: Mischa hands over the shop, and at the end the whole district is yours */
 function revStory() {
@@ -6961,7 +6961,7 @@ function revStory() {
   if (n >= 3 && !P.seen.chef) { P.seen.chef = 1; q.push(() => talk('mischa', ['Drei von vier Revieren. Ick hab dreißig Jahre für ein Revier jebraucht, und du machst dit in ’n paar Nächten.', 'Ick werd alt, Junge. Meine Datsche in Brandenburg wartet, und die Tomaten ooch.', 'Der Laden jehört ab heute dir. Die Ticker wissen Bescheid: Du kriegst die Ware zum Einkaufspreis. Mach wat draus. Und ruf mal an.'],
     () => { G.depotPrice = 50; banner('Du bist der Chef', 'Dein Laden', 'Ware beim Ticker ab jetzt für ' + eur0(50) + ' statt ' + eur0(65), 'rank'); addXp(150); saveGame(); })); }
   if (n >= REVIERE.length && !P.seen.pate) { P.seen.pate = 1; q.push(() => talk('kalle', ['Zentrale an Wagen sieben … ach, wat red ick. Der janze Prenzlauer Berg jehört dir.', 'Ick sag ab jetzt Chef zu dir. Fährste trotzdem noch Taxi? Die Leute fragen.', 'Rudi hat übrigens wat für dein Dach jebaut. Steht in der Garage. Is ’n bisschen drüber. Passt zu dir.'],
-    () => { P.g.tops.pate = 1; P.g.top = 'pate'; G.stats.karEur += 2500; earn(2500, 'Der Kiez gehört dir:'); banner('Pate vom Prenzlauer Berg', 'Alle vier Reviere', 'Die Paten-Krone steht in der Garage auf deinem Dach', 'rank'); addXp(300); buildPlayerCar(); saveGame(); })); }
+    () => { P.g.tops.pate = 1; P.g.top = 'pate'; G.stats.karEur += 1250; earn(1250, 'Der Kiez gehört dir:'); banner('Pate vom Prenzlauer Berg', 'Alle vier Reviere', 'Die Paten-Krone steht in der Garage auf deinem Dach', 'rank'); addXp(300); buildPlayerCar(); saveGame(); })); }
 }
 /* ---------- orders: foreign ground pays more and has a price ---------- */
 function revOffer(spot, price) {                       // -> [price, territory id or '', text for the phone]
@@ -7248,17 +7248,17 @@ function revHow(r) {
 const nextRev = () => REVIERE.filter(r => !revMine(r)).sort((a, b) => CREWS[a.crew].rank - CREWS[b.crew].rank)[0];
 const cash = () => G.live ? G.money : P.money;
 const CHAP = [
-  { id: 'n1', n: 'Die erste Nacht überstehen', u: 'taxi', eur: 50, done: () => P.night >= 1, how: () => 'Fahrgäste und Päckchen · um 6 Uhr ist Feierabend' },
-  { id: 'rang', n: 'Rang Aushilfe erreichen', u: 'ziele', eur: 100, done: () => rankOf(P.xp) >= 1, how: () => 'Noch ' + Math.max(0, RANKS[1][1] - P.xp) + ' Respekt: Aufträge, Schichtziele, neue Straßen' },
-  { id: 'vip', n: 'Einen VIP ans Ziel bringen', u: 'lauf', eur: 150, done: () => lifeOf('vip') >= 1, how: () => 'Weiße Säule: Die Zentrale meldet per SMS, wenn ein VIP wartet' },
-  { id: 'race', n: 'Ein Rennen gewinnen', u: 'rennen', eur: 200, done: () => P.wins >= 1, how: () => 'Rote Säulen auf der Karte sind Herausforderer' },
-  { id: 'rv1', n: 'Das erste Revier übernehmen', u: 'rev', eur: 500, done: () => revCount() >= 2, how: () => { const r = nextRev(); return r ? r.n + ': ' + revHow(r) : ''; } },
-  { id: 'bank', n: 'Eine Sparkasse ausnehmen', u: 'bank', eur: 300, done: () => lifeOf('heists') >= 1, how: () => 'Goldene Säule, danach alle Sterne abschütteln' },
-  { id: 'chef', n: 'Chef werden: drei Reviere', u: 'rev', eur: 800, done: () => !!P.seen.chef, how: () => { const r = nextRev(); return revCount() + ' von 3 · ' + (r ? r.n + ': ' + revHow(r) : ''); } },
-  { id: 'bigm', n: 'Big M im Rennen schlagen', u: 'lager', eur: 300, done: () => !!P.sp.bigm, how: () => 'Prenzlauer Allee 34 · rote Säule, ein Versuch pro Nacht' },
-  { id: 'lag', n: 'Das erste Lager kaufen', u: 'lager', eur: 250, done: () => lagerOwn().length >= 1, how: () => { const miss = 600 - cash(); return 'Remise am Helmholtzplatz, 600 €' + (miss > 0 ? ' · dir fehlen noch ' + eur0(miss) : ' · kannst du dir leisten'); } },
-  { id: 'run', n: 'Einen Läufer anstellen', u: 'lager', eur: 250, done: () => lagerOwn().some(l => P.lager[l.id].run > 0), how: () => P.crew.length ? 'Im Lager: „Anstellen: ' + P.crew[0] + '“' : 'Gewinn ein Straßenrennen oder tu jemandem einen Gefallen' },
-  { id: 'pate', n: 'Pate werden: alle vier Reviere', u: 'rev', eur: 2000, done: () => !!P.seen.pate, how: () => { const r = nextRev(); return revCount() + ' von 4 · ' + (r ? r.n + ': ' + revHow(r) : ''); } },
+  { id: 'n1', n: 'Die erste Nacht überstehen', u: 'taxi', eur: 20, done: () => P.night >= 1, how: () => 'Fahrgäste und Päckchen · um 6 Uhr ist Feierabend' },
+  { id: 'rang', n: 'Rang Aushilfe erreichen', u: 'ziele', eur: 50, done: () => rankOf(P.xp) >= 1, how: () => 'Noch ' + Math.max(0, RANKS[1][1] - P.xp) + ' Respekt: Aufträge, Schichtziele, neue Straßen' },
+  { id: 'vip', n: 'Einen VIP ans Ziel bringen', u: 'lauf', eur: 70, done: () => lifeOf('vip') >= 1, how: () => 'Weiße Säule: Die Zentrale meldet per SMS, wenn ein VIP wartet' },
+  { id: 'race', n: 'Ein Rennen gewinnen', u: 'rennen', eur: 100, done: () => P.wins >= 1, how: () => 'Rote Säulen auf der Karte sind Herausforderer' },
+  { id: 'rv1', n: 'Das erste Revier übernehmen', u: 'rev', eur: 250, done: () => revCount() >= 2, how: () => { const r = nextRev(); return r ? r.n + ': ' + revHow(r) : ''; } },
+  { id: 'bank', n: 'Eine Sparkasse ausnehmen', u: 'bank', eur: 150, done: () => lifeOf('heists') >= 1, how: () => 'Goldene Säule, danach alle Sterne abschütteln' },
+  { id: 'chef', n: 'Chef werden: drei Reviere', u: 'rev', eur: 400, done: () => !!P.seen.chef, how: () => { const r = nextRev(); return revCount() + ' von 3 · ' + (r ? r.n + ': ' + revHow(r) : ''); } },
+  { id: 'bigm', n: 'Big M im Rennen schlagen', u: 'lager', eur: 150, done: () => !!P.sp.bigm, how: () => 'Prenzlauer Allee 34 · rote Säule, ein Versuch pro Nacht' },
+  { id: 'lag', n: 'Das erste Lager kaufen', u: 'lager', eur: 120, done: () => lagerOwn().length >= 1, how: () => { const miss = 600 - cash(); return 'Remise am Helmholtzplatz, 600 €' + (miss > 0 ? ' · dir fehlen noch ' + eur0(miss) : ' · kannst du dir leisten'); } },
+  { id: 'run', n: 'Einen Läufer anstellen', u: 'lager', eur: 120, done: () => lagerOwn().some(l => P.lager[l.id].run > 0), how: () => P.crew.length ? 'Im Lager: „Anstellen: ' + P.crew[0] + '“' : 'Gewinn ein Straßenrennen oder tu jemandem einen Gefallen' },
+  { id: 'pate', n: 'Pate werden: alle vier Reviere', u: 'rev', eur: 1000, done: () => !!P.seen.pate, how: () => { const r = nextRev(); return revCount() + ' von 4 · ' + (r ? r.n + ': ' + revHow(r) : ''); } },
 ];
 const chapNow = () => CHAP.find(c => !c.done());
 function goalHud() {
