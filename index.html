@@ -769,6 +769,7 @@ body.touch .toast.ban { padding: 5px 14px 7px; } body.touch .toast.ban b { font-
   <div class="pbox opt">
     <h2>Einstellungen</h2>
     <label class="o-check"><input type="checkbox" id="o-pro"><span><b>Profi-Modus</b><small>Keine Linie auf der Straße und keine Pfeile am Bildrand. Den Weg zeigt nur noch die Minimap.</small></span></label>
+    <label class="o-check"><input type="checkbox" id="o-spar"><span><b>Sparmodus</b><small>30 Bilder pro Sekunde, keine Kantenglättung. Lässt dem Rechner Luft für anderes, etwa eine Serie nebenher. Auf schwachen Grafikchips von selbst an. Gilt nach dem Neuladen der Seite.</small></span></label>
     <label class="o-check"><input type="checkbox" id="o-fake"><span><b>Erfundene Ladennamen</b><small>Die Läden stehen, wo sie wirklich sind, heißen aber anders. Ausschalten zeigt die echten Namen. Gilt nach dem Neuladen der Seite.</small></span></label>
     <button type="button" id="o-full" class="o-full">Vollbild</button>
     <h3>Spielstand mitnehmen</h3>
@@ -1325,8 +1326,9 @@ function mkMaterials() {
 }
 
 function initScene(canvas) {
-  renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.75));
+  SPAR = sparOn();                                    // weak graphics chip: no edge smoothing, plain pixel density, 30 frames a second
+  renderer = new THREE.WebGLRenderer({ canvas, antialias: !SPAR, powerPreference: SPAR ? 'default' : 'high-performance' });
+  renderer.setPixelRatio(SPAR ? 1 : Math.min(window.devicePixelRatio || 1, 1.75));
   renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFShadowMap;
   MAXANISO = Math.min(8, renderer.capabilities.getMaxAnisotropy());
   scene = new THREE.Scene(); scene.background = new THREE.Color(0x090b14); scene.fog = new THREE.Fog(0x0c1020, 270, 860);
@@ -3971,9 +3973,12 @@ function updJobs(dt) {
 function navTargets() {
   let nav = null;
   if (G.gpsPick && (!MK.includes(G.gpsPick) || G.gpsPick.off)) G.gpsPick = null;
-  if (G.gpsPick && G.gpsPick.type !== 'hail' && G.gpsPick.type !== 'order' && hyp(G.gpsPick.x - PL.x, G.gpsPick.y - PL.y) < 9) { if (G.gpsPick.type === 'pin') rmMarker(G.gpsPick); G.gpsPick = null; }
+  if (G.gpsPick && G.gpsPick.type !== 'hail' && G.gpsPick.type !== 'order' && hyp(G.gpsPick.x - PL.x, G.gpsPick.y - PL.y) < 9) { if (G.gpsPick.type === 'pin') rmMarker(G.gpsPick); G.gpsPick = null; G.routeT = 0; }
   if (G.gpsPick) nav = G.gpsPick;
-  else if (G.gpsMode) { const list = [null, POI.depot, POI.werk, POI.spaeti][G.gpsMode]; nav = list.slice().sort((a, b) => hyp(a.x - PL.x, a.y - PL.y) - hyp(b.x - PL.x, b.y - PL.y))[0].mk; }
+  else if (G.gpsMode) {
+    const list = [null, POI.depot, POI.werk, POI.spaeti][G.gpsMode]; nav = list.slice().sort((a, b) => hyp(a.x - PL.x, a.y - PL.y) - hyp(b.x - PL.x, b.y - PL.y))[0].mk;
+    if (hyp(nav.x - PL.x, nav.y - PL.y) < 12) { G.gpsMode = 0; nav = null; G.routeT = 0; toast('Angekommen. Navi aus.'); }      // there: the line goes, as it does for a map pick
+  }
   let taxi = G.fare ? G.fare.mk : null, snow = null; G.actOrd = null; G.viaSrc = null;
   if (G.orders.length) {
     const o = G.orders.slice().sort((a, b) => hyp(a.spot.x - PL.x, a.spot.y - PL.y) - hyp(b.spot.x - PL.x, b.spot.y - PL.y))[0]; G.actOrd = o; snow = o.mk;
@@ -4557,7 +4562,7 @@ const DEF_KB = { up: ['KeyW', 'ArrowUp'], down: ['KeyS', 'ArrowDown'], left: ['K
 const DEF_PAD = { up: 'r2', down: 'l2', hb: 'l2', use: 'a', horn: 'b', turbo: 'l1', kit: 'x', yes: 'up', no: 'down', cancel: 'r3', radio: 'right', gps: 'left', map: 'share', cam: 'y', pov: '', pause: 'opt' };
 const HOLD = { up: 1, down: 1, left: 1, right: 1, hb: 1 };
 const OPT = { v: 3, pro: false, fake: true, cam: 3, kb: JSON.parse(JSON.stringify(DEF_KB)), pad: Object.assign({}, DEF_PAD), kl: {} };
-try { const o = JSON.parse(localStorage.getItem('schneetreiben-opt') || '{}'); if (o.kb) for (const k in DEF_KB) if (Array.isArray(o.kb[k])) OPT.kb[k] = o.kb[k]; if (o.pad) for (const k in DEF_PAD) if (typeof o.pad[k] === 'string') OPT.pad[k] = o.pad[k]; OPT.pro = !!o.pro; OPT.fake = o.fake === undefined ? true : !!o.fake; /* made-up shop names unless you switch the real ones on */ if (o.v >= 3 && o.cam >= 0 && o.cam < 4) OPT.cam = o.cam; /* older settings: the camera starts behind the car */ if (o.kl) OPT.kl = o.kl;
+try { const o = JSON.parse(localStorage.getItem('schneetreiben-opt') || '{}'); if (o.kb) for (const k in DEF_KB) if (Array.isArray(o.kb[k])) OPT.kb[k] = o.kb[k]; if (o.pad) for (const k in DEF_PAD) if (typeof o.pad[k] === 'string') OPT.pad[k] = o.pad[k]; OPT.pro = !!o.pro; if (typeof o.spar === 'boolean') OPT.spar = o.spar; OPT.fake = o.fake === undefined ? true : !!o.fake; /* made-up shop names unless you switch the real ones on */ if (o.v >= 3 && o.cam >= 0 && o.cam < 4) OPT.cam = o.cam; /* older settings: the camera starts behind the car */ if (o.kl) OPT.kl = o.kl;
   if (!(o.v >= 2) && OPT.pad.down === 'r1' && OPT.pad.hb === 'l2') OPT.pad.down = 'l2';          // the layout before brake and drift shared a button
 } catch (e) { }
 function goFull(asked) {
@@ -4566,6 +4571,19 @@ function goFull(asked) {
   if (!rq) { if (asked) toast('Dieser Browser kann kein Vollbild. Auf dem iPhone: Teilen → Zum Home-Bildschirm, dann von dort starten.'); return; }
   try { const p = rq.call(el, { navigationUI: 'hide' }); if (p && p.then) p.then(() => { try { screen.orientation && screen.orientation.lock && screen.orientation.lock('landscape').catch(() => { }); } catch (e) { } }).catch(() => { if (asked) toast('Vollbild wurde vom Browser abgelehnt.'); }); } catch (e) { }
 }
+/* saver mode: on by itself on built-in graphics chips that share their power with everything else on the machine; the settings can override it */
+let SPAR = false, _weak = null;
+function weakGpu() {
+  if (_weak !== null) return _weak; _weak = false;
+  try {
+    const gl = document.createElement('canvas').getContext('webgl'), ext = gl && gl.getExtension('WEBGL_debug_renderer_info');
+    const r = ext ? String(gl.getParameter(ext.UNMASKED_RENDERER_WEBGL)) : '';
+    _weak = /Radeon\(TM\)\s*\d{3}M|Radeon\(TM\) Graphics|Radeon Graphics|Vega \d|UHD Graphics|HD Graphics|Basic Render|SwiftShader|llvmpipe/i.test(r);
+    const lc = gl && gl.getExtension('WEBGL_lose_context'); if (lc) lc.loseContext();
+  } catch (e) { }
+  return _weak;
+}
+const sparOn = () => typeof OPT.spar === 'boolean' ? OPT.spar : weakGpu();
 function saveOpt() { try { localStorage.setItem('schneetreiben-opt', JSON.stringify(OPT)); } catch (e) { } }
 let KBMAP = {}, CAP = null;
 const KEYNAME = { Space: 'Leertaste', ArrowUp: '↑', ArrowDown: '↓', ArrowLeft: '←', ArrowRight: '→', ShiftLeft: 'Shift', ShiftRight: 'Shift rechts', ControlLeft: 'Strg', ControlRight: 'Strg rechts', AltLeft: 'Alt', AltRight: 'Alt Gr', Enter: 'Enter', Tab: 'Tab', Backspace: 'Rücktaste', CapsLock: 'Feststell' };
@@ -4597,7 +4615,7 @@ function doAct(a) {
 function openOpts() { $('opts').hidden = false; $('o-save-msg').textContent = ''; $('o-code').value = ''; renderOpts(); }
 function closeOpts() { CAP = null; $('opts').hidden = true; refreshHints(); }
 function renderOpts() {
-  $('o-pro').checked = OPT.pro; $('o-fake').checked = OPT.fake;
+  $('o-pro').checked = OPT.pro; $('o-fake').checked = OPT.fake; $('o-spar').checked = sparOn();
   const has = !G.admin && !!readSlot(SLOT), menu = G.mode === 'title';
   $('o-save-note').textContent = G.admin ? 'Im Admin-Modus gibt es keinen Spielstand.' : 'Gewählt ist Spielstand ' + SLOT + ': ' + (has ? slotLine(P) : 'leer') + '. Der Code enthält alles daraus: Geld, Autos, Tuning, Lager, Sender. In einer anderen Kopie des Spiels oder auf einem anderen Gerät hier einfügen und laden.' + (menu ? '' : ' Laden geht nur im Hauptmenü.');
   $('o-export').disabled = !has; $('o-import').disabled = !menu || G.admin; $('o-import').textContent = 'In Spielstand ' + SLOT + ' laden'; delete $('o-import').dataset.sure;
@@ -4721,6 +4739,7 @@ function initInput() {
   $('o-full').onclick = () => goFull(true);
   // on a phone the game goes edge to edge with the first tap on a start button (Android; on an iPhone: add it to the home screen)
   for (const id of ['start', 'start-admin', 't-garage']) $(id).addEventListener('click', () => { if (TCH.on || matchMedia('(pointer: coarse)').matches) goFull(false); });
+  $('o-spar').onchange = e => { OPT.spar = e.target.checked; saveOpt(); toast('Gilt ab dem nächsten Laden der Seite.', 'good'); };
   $('o-fake').onchange = e => { OPT.fake = e.target.checked; saveOpt(); toast('Gilt ab dem nächsten Laden der Seite.', 'good'); };
   radioHud();
   $('ph-yes').onclick = () => answerOffer(true); $('ph-no').onclick = () => answerOffer(false); $('job-x').onclick = () => { if (G.mode === 'play') dlgCancel(); }; $('mapwrap').onclick = toggleMap; $('d-esc').onclick = closeDialog;
@@ -4755,6 +4774,7 @@ function initGame() {
 let _last = 0, _fpsT = 0, _fpsN = 0, _q = 2, _lm = '';
 function frame(now) {
   requestAnimationFrame(frame);
+  if (SPAR && now - _last < 29) return;                  // saver mode: every other screen refresh, so a series can keep playing next to the game
   const dt = Math.min(.05, (now - _last) / 1000 || .016); _last = now;
   pollPad(dt);
   if (G.mode !== _lm) { if (G.mode !== 'play') auQuiet(); _lm = G.mode; }       // no engine drone behind the map or a shop window
@@ -6435,8 +6455,6 @@ const ACH = [
   { id: 'clean', g: 'Fahren', n: 'Fahrschul-Vorbild', d: '2 Stunden am Stück ohne Kratzer fahren', t: 120, v: () => Math.floor(recOf('clean')), xp: 50 },
   { id: 'pf100', g: 'Fahren', n: 'Flaschensammler', d: '100 Pfandflaschen einsammeln', t: 100, v: () => lifeOf('pfand'), xp: 30 },
   { id: 'pf500', g: 'Fahren', n: 'Pfandkönig', d: '500 Pfandflaschen einsammeln', t: 500, v: () => lifeOf('pfand'), xp: 100 },
-  { id: 'lauf5', g: 'Fahren', n: 'Läuft bei dir', d: 'Einen Lauf von 5 Aufträgen schaffen', t: 5, v: () => recOf('lauf'), xp: 40 },
-  { id: 'lauf10', g: 'Fahren', n: 'Nicht zu stoppen', d: 'Einen Lauf von 10 Aufträgen schaffen', t: 10, v: () => recOf('lauf'), xp: 120 },
   { id: 'goals', g: 'Fahren', n: 'Streber', d: 'Alle drei Schichtziele in einer Nacht schaffen', t: 3, v: () => recOf('goals'), xp: 50 },
   { id: 'esc1', g: 'Blaulicht', n: 'Abgehängt', d: 'Einer 3-Sterne-Fahndung entkommen', t: 1, v: () => lifeOf('esc'), xp: 30 },
   { id: 'esc10', g: 'Blaulicht', n: 'Phantom', d: '10-mal einer 3-Sterne-Fahndung entkommen', t: 10, v: () => lifeOf('esc'), xp: 100 },
@@ -6554,8 +6572,7 @@ function laufEnd(why) {
 }
 /* one finished job, whatever it was: the run, the Respekt */
 function jobDone(kind, base, big) {
-  if (unl('lauf')) laufHit(base);
-  addXp((kind === 'fare' ? 8 : kind === 'deliv' ? 10 : kind === 'sp' ? 60 : 30) + (big ? (kind === 'fare' ? 12 : 6) : 0) + Math.min(G.lauf - 1, 8));
+  addXp((kind === 'fare' ? 8 : kind === 'deliv' ? 10 : kind === 'sp' ? 60 : 30) + (big ? (kind === 'fare' ? 12 : 6) : 0));
 }
 
 /* ---------- one task a day: the same for everybody, new at midnight, nothing lost if you skip it ---------- */
@@ -6565,7 +6582,6 @@ const DAILY = [
   { t: '40 Pfandflaschen in einer Nacht sammeln', n: 40, v: () => G.stats.pfand },
   { t: '600 € Gewinn in einer Nacht einfahren', n: 600, v: () => Math.floor(G.money - G.startMoney) },
   { t: 'Einen Drift 5 Sekunden halten', n: 5, v: () => Math.floor(G.stats.longDrift) },
-  { t: 'Einen Lauf von 6 Aufträgen schaffen', n: 6, v: () => G.laufBest, u: 'lauf' },
   { t: '50 € Trinkgeld in einer Nacht kassieren', n: 50, v: () => Math.floor(G.stats.tips) },
   { t: 'Ein Rennen gewinnen', n: 1, v: () => G.stats.raceWin, u: 'rennen' },
   { t: '2 Stunden am Stück ohne Kratzer fahren', n: 120, v: () => Math.floor(G.cleanBest) },
@@ -6619,7 +6635,7 @@ function careerNight(tut, lappen) {
   const s = G.stats, L = P.life, R = P.rec, p0 = G.money - G.startMoney, recs = [];
   addXp(lappen ? 5 : tut ? 30 : 15 + Math.round(clamp(p0, 0, 3000) / 20), true);
   const had = (L.nights || 0) > 0;
-  for (const [k, lab, v] of [['fares', 'meiste Fahrgäste', s.fares], ['deliv', 'meiste Lieferungen', s.deliv], ['drift', 'längster Drift', Math.round(s.longDrift * 10) / 10], ['lauf', 'längster Lauf', G.laufBest], ['km', 'meiste Kilometer', Math.round(s.km * 10) / 10], ['clean', '', Math.floor(G.cleanBest)], ['goals', '', G.goals.filter(g => g.done).length]]) {
+  for (const [k, lab, v] of [['fares', 'meiste Fahrgäste', s.fares], ['deliv', 'meiste Lieferungen', s.deliv], ['drift', 'längster Drift', Math.round(s.longDrift * 10) / 10], ['km', 'meiste Kilometer', Math.round(s.km * 10) / 10], ['clean', '', Math.floor(G.cleanBest)], ['goals', '', G.goals.filter(g => g.done).length]]) {
     if (v > (R[k] || 0)) { if (had && lab && (R[k] || 0) > 0) recs.push(lab); R[k] = v; }
   }
   for (const k in LIFE) L[k] = Math.round(((L[k] || 0) + (s[LIFE[k]] || 0)) * 100) / 100;
@@ -6663,7 +6679,7 @@ function careerReceipt(car, profit) {
   const tip = nightTip(G.endWhy); if (tip) { li('tip', 'Tipp: ' + tip); ul.prepend(ul.lastChild); }
   const nx = careerNext(); for (const t of nx.slice(0, Math.max(2, 5 - ul.children.length))) li('', t);
   const url = location.protocol === 'https:' && !/claude|anthropic/.test(location.hostname) ? ' ' + location.origin + location.pathname : '';
-  G.share = 'Schneetreiben, Nacht ' + P.night + ': ' + (profit < 0 ? '−' : '') + eur0(Math.abs(profit)) + ' Gewinn, Rang ' + RANKS[r][0] + ', Kiez zu ' + kiezPct() + ' % erkundet' + (G.laufBest > 1 ? ', längster Lauf ' + G.laufBest : '') + '. Schaffst du mehr?' + url;
+  G.share = 'Schneetreiben, Nacht ' + P.night + ': ' + (profit < 0 ? '−' : '') + eur0(Math.abs(profit)) + ' Gewinn, Rang ' + RANKS[r][0] + ', Kiez zu ' + kiezPct() + ' % erkundet' + '. Schaffst du mehr?' + url;
   $('e-share').textContent = 'Ergebnis teilen';
 }
 function shareNight() {
@@ -6700,7 +6716,7 @@ function renderCareer() {
   const dj = dayJob(), dd = P.day === dayKey(); $('c-day').textContent = P.tut < 2 ? 'Gibt es ab der zweiten Nacht.' : dj.t + (dd ? ' · erledigt' : ' · ' + eur0(DAY_EUR) + ' und ' + DAY_XP + ' Respekt'); $('c-day2').textContent = 'Jeden Tag ein anderer, für alle derselbe. Bisher erledigt: ' + (P.dayN || 0);
   const rows = (id, list) => { const el = $(id); el.textContent = ''; for (const [k, v] of list) { const d = document.createElement('div'); const x = document.createElement('span'); x.textContent = k; const y = document.createElement('b'); y.textContent = v; d.append(x, y); el.append(d); } };
   const sec = v => v.toLocaleString('de-DE', { maximumFractionDigits: 1 });
-  rows('c-rec', [['Beste Nacht', eur0(P.best || 0)], ['Fahrgäste in einer Nacht', n(recOf('fares'))], ['Lieferungen in einer Nacht', n(recOf('deliv'))], ['Längster Drift', sec(recOf('drift')) + ' s'], ['Längster Lauf', n(recOf('lauf')) + ' Aufträge']]);
+  rows('c-rec', [['Beste Nacht', eur0(P.best || 0)], ['Fahrgäste in einer Nacht', n(recOf('fares'))], ['Lieferungen in einer Nacht', n(recOf('deliv'))], ['Längster Drift', sec(recOf('drift')) + ' s']]);
   rows('c-life', [['Nächte', n(P.night)], ['Fahrgäste', n(lifeOf('fares'))], ['Lieferungen', n(lifeOf('deliv'))], ['Kilometer', sec(lifeOf('km'))], ['Rennen gewonnen', n(P.wins || 0)], ['Gewinn gesamt', eur0(lifeOf('eur'))]]);
   revCareer(); chapList();
   $('c-achn').textContent = achN() + ' von ' + ACH.length;
@@ -7083,10 +7099,9 @@ const NEWS = {
     'Oben rechts stehen jetzt drei Schichtziele. Jedes geschaffte bringt Geld.',
     'Für jeden Auftrag, jedes Ziel und jede Straße, die du zum ersten Mal fährst, gibt es Respekt. Mit genug Respekt steigst du im Rang auf: Prämie, und jede Fahrt bringt mehr.',
     'Dazu gibt es jeden Tag einen Tagesauftrag mit ' + 200 + ' € extra.'] },
-  lauf: { t: 'Der Lauf und VIPs', l: [
-    'Erledigst du Aufträge direkt hintereinander, entsteht ein Lauf. Jeder weitere Auftrag bringt 5 % mehr, bis 25 %.',
-    'Der grüne Balken zeigt, wie lange du bis zum nächsten Auftrag Zeit hast. Mit Fahrgast an Bord steht die Uhr.',
-    'Ab und zu wartet ein VIP an einer weißen Säule. Er zahlt das Zweieinhalbfache, wartet aber nicht lange.'] },
+  lauf: { t: 'VIPs', l: [
+    'Ab und zu wartet ein VIP an einer weißen Säule. Er zahlt das Zweieinhalbfache, wartet aber nicht lange.',
+    'Die Zentrale schickt dir eine SMS, sobald einer wartet. Auf der Karte ist sein Punkt weiß.'] },
   rennen: { t: 'Rennen', l: [
     'Rote Säulen auf der Karte sind Herausforderer. Fahr hin, halt an und nimm das Rennen an.',
     'Ihr startet nebeneinander. Wer zuerst im Ziel ist, gewinnt. Bei Straßenrennen verdoppelt sich der Einsatz.',
@@ -7108,7 +7123,6 @@ const NEWS = {
 const TIPS = {
   heat: ['Fahndung', 'Die Polizei ist hinter dir her. Die Sterne oben rechts zeigen, wie sehr. Fahr weg, bis dich keine Streife mehr sieht, dann gehen die Sterne von allein weg.'],
   flens: ['Bußgeld', 'Rote Ampeln und Blitzer kosten Geld. Ab dem vierten Verstoß in einer Nacht kennt die Polizei dein Kennzeichen, dann gibt jeder weitere einen Stern. Am nächsten Abend ist alles vergessen.'],
-  lauf: ['Ein Lauf', 'Zwei Aufträge am Stück. Der nächste bringt 5 % mehr, wenn du ihn erledigst, bevor der grüne Balken leer ist.'],
   vip: ['Ein VIP', 'Die weiße Säule ist ein VIP. Er zahlt das Zweieinhalbfache, ist aber bald weg. Steht auf der Karte als weißer Punkt.'],
   fremd: ['Fremdes Revier', 'Du bist jetzt im Revier einer Bande. Lieferungen zahlen hier mehr, aber die Bande sieht das nicht gern. Die Prozentzahl am Straßenschild zeigt, wie stark sie hier ist.'],
   runner: ['Läufer einer Bande', 'Der rote Punkt ist ein Läufer der Bande. Abziehen bringt Ware und Geld und schwächt die Bande, aber ihre Abzieher kommen sofort.'],
@@ -7189,7 +7203,7 @@ const cash = () => G.live ? G.money : P.money;
 const CHAP = [
   { id: 'n1', n: 'Die erste Nacht überstehen', u: 'taxi', eur: 50, done: () => P.night >= 1, how: () => 'Fahrgäste und Päckchen · um 6 Uhr ist Feierabend' },
   { id: 'rang', n: 'Rang Aushilfe erreichen', u: 'ziele', eur: 100, done: () => rankOf(P.xp) >= 1, how: () => 'Noch ' + Math.max(0, RANKS[1][1] - P.xp) + ' Respekt: Aufträge, Schichtziele, neue Straßen' },
-  { id: 'lauf', n: 'Einen Lauf von 3 Aufträgen schaffen', u: 'lauf', eur: 150, done: () => recOf('lauf') >= 3, how: () => 'Aufträge direkt hintereinander, bevor der grüne Balken leer ist' },
+  { id: 'vip', n: 'Einen VIP ans Ziel bringen', u: 'lauf', eur: 150, done: () => lifeOf('vip') >= 1, how: () => 'Weiße Säule: Die Zentrale meldet per SMS, wenn ein VIP wartet' },
   { id: 'race', n: 'Ein Rennen gewinnen', u: 'rennen', eur: 200, done: () => P.wins >= 1, how: () => 'Rote Säulen auf der Karte sind Herausforderer' },
   { id: 'rv1', n: 'Das erste Revier übernehmen', u: 'rev', eur: 500, done: () => revCount() >= 2, how: () => { const r = nextRev(); return r ? r.n + ': ' + revHow(r) : ''; } },
   { id: 'bank', n: 'Eine Sparkasse ausnehmen', u: 'bank', eur: 300, done: () => lifeOf('heists') >= 1, how: () => 'Goldene Säule, danach alle Sterne abschütteln' },
@@ -7231,7 +7245,7 @@ const HELP = [
   { u: 'taxi', t: 'Polizei und Bußgelder', l: () => ['Streifen haben einen blauen Fächer vor dem Auto. Darin unter 70 bleiben und nichts anstellen.', 'Jagen sie dich, zeigen die Sterne oben rechts die Fahndung. Abhängen, bis alle Sterne weg sind.', 'Rote Ampeln und Blitzer kosten Bußgeld. Ab dem vierten Verstoß in einer Nacht gibt jeder weitere einen Stern.'] },
   { u: 'taxi', t: 'Späti, Werkstatt, Garage', l: () => ['Späti (grüne Säule): Kiez-Mate. ' + hint('turbo') + ' trinkt sie: sechs Sekunden Turbo.', 'Werkstatt (orange Säule): repariert die Karre und verkauft Werkzeugkoffer. Mit ' + hint('kit') + ' flickst du unterwegs.', 'Nach jeder Nacht geht es in die Garage: Autos, Tuning, Lack, Hupen, Dachschmuck.'] },
   { u: 'ziele', t: 'Ziele und Respekt', l: () => NEWS.ziele.l },
-  { u: 'lauf', t: 'Der Lauf und VIPs', l: () => NEWS.lauf.l },
+  { u: 'lauf', t: 'VIPs', l: () => NEWS.lauf.l },
   { u: 'rennen', t: 'Rennen', l: () => NEWS.rennen.l },
   { u: 'rev', t: 'Reviere', l: () => NEWS.rev.l.concat(['Gehört dir ein Revier, kommen dort mehr Anfragen, und deine Läufer sind sicher. Die Bande greift an, um es zurückzuholen. Verpasst du einen Angriff, wackelt es, beim zweiten ist es weg. Dreimal abgewehrt, gibt die Bande auf.', 'Dein Rang entscheidet, wen du übernehmen darfst. Mit drei Revieren bist du Chef, mit allen vier Pate.']) },
   { u: 'rev', t: 'Mischas Aufträge', l: () => ['Ab und zu hat Mischa einen Auftrag: eine Tasche aus einem fremden Revier holen, einen Spitzel abhängen oder eine Eilsendung. Orange Säule an seiner Garage.', 'Jeder Auftrag hat eine Zeit und einen Haken: Abzieher, ein Zivilwagen oder drei Päckchen, die du nicht anrühren darfst.', 'Wenn dir der Laden gehört, ruft Mischa aus seiner Datsche an. Seine alten Rechnungen zahlen besser.'] },
@@ -7259,7 +7273,6 @@ function nightTip(why) {
   if (s.fines > 0) return 'Bußgelder: Rote Ampeln und Blitzer kosten, und ab dem vierten Verstoß sucht dich die Polizei. Blitzerabwehr und Anwalt in der Garage helfen.';
   if (G.dmg > 70) return 'Die Karre ist fast hin. Werkzeugkoffer aus der Werkstatt flicken sie unterwegs.';
   if (!s.deliv && P.night >= 1) return 'Lieferungen bringen am meisten: Ware beim Ticker holen, dann kommen Bestellungen aufs Handy.';
-  if (unl('lauf') && G.laufBest < 3) return 'Aufträge direkt hintereinander bringen bis zu 25 % mehr.';
   return '';
 }
 const nextNews = () => { for (const k in UNL) if (UNL[k] === P.night) return NEWS[k].t; return ''; };
@@ -7585,7 +7598,7 @@ function initTouch() {
   document.addEventListener('contextmenu', e => { if (TCH.on && !field(e)) e.preventDefault(); });
   document.addEventListener('dblclick', e => { if (TCH.on && !field(e)) e.preventDefault(); });
   addEventListener('blur', () => { TCH.gas = TCH.brk = false; TCH.st = 0; });
-  const on = () => { TCH.on = true; if (!document.body.classList.contains('touch')) { document.body.classList.add('touch'); if (_q === 2) { _q = 1; renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.25)); resize(); } } };
+  const on = () => { TCH.on = true; if (!document.body.classList.contains('touch')) { document.body.classList.add('touch'); if (_q === 2 && !SPAR) { _q = 1; renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.25)); resize(); } } };
   addEventListener('pointerdown', e => { if (e.pointerType === 'touch') on(); }, true);
   if (matchMedia('(pointer: coarse)').matches && !matchMedia('(pointer: fine)').matches) on();
   const sp = $('t-steer'), kn = $('t-knob'); let sid = null, sx0 = 0;
