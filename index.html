@@ -7584,6 +7584,7 @@ function pollPad(dt) {
     if (Math.abs(rx) > .2 && !CAM.pov) { CAM.oy = angDiff(CAM.oy - rx * dt * 2.2, 0); PAD.look = true; } else if (PAD.look) { CAM.oy *= Math.exp(-5 * dt); if (Math.abs(CAM.oy) < .01) { CAM.oy = 0; PAD.look = false; } }   // look around, swings back
     for (const [a] of ACTS) if (!HOLD[a] && hit(B[a])) doAct(a);
     if (hit('pad') && B.map !== 'pad' && !Object.values(B).includes('pad')) doAct('map');
+    if (hit('r1') && !Object.values(B).includes('r1')) doAct('turbo');      // R1 fires the turbo too, as long as R1 is not mapped to something else
     if (AU.ctx && AU.ctx.state !== 'running' && !PAD.noSound && G.t > 2) { PAD.noSound = true; toast('Kein Ton? Einmal ins Spiel klicken, dann läuft das Radio.'); }
   } else {
     PAD.thr = PAD.st = 0; PAD.hb = false;
