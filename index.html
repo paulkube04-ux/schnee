@@ -3720,7 +3720,7 @@ class Rival extends Car {
     this.g = carModel(0, 0x1b1d24, false); const sg = new THREE.Mesh(new THREE.BoxGeometry(.5, .24, 1), new THREE.MeshBasicMaterial({ color: 0x3dffa0 })); sg.position.set(-.3, 1.7, 0); this.g.add(sg);
     this.g.visible = false; this.on = false; this.tgt = null; this.re = 0; this.stun = 0; this.rev = 0; this.stuck = 0; this.carry = 0; this.wp = null; this.tx = 0; this.ty = 0;
   }
-  spawn() { const s = segNear(260, 420, true); if (!s) return; const t = s.len / 2; this.x = s.ax + s.dx * t; this.y = s.ay + s.dy * t; this.a = Math.atan2(s.dy, s.dx); this.vx = this.vy = 0; this.on = true; this.g.visible = true; this.tgt = null; this.carry = 0; this.re = 0; }
+  spawn() { const s = segNear(260, 420, true); if (!s) return; this.gone = 0; const t = s.len / 2; this.x = s.ax + s.dx * t; this.y = s.ay + s.dy * t; this.a = Math.atan2(s.dy, s.dx); this.vx = this.vy = 0; this.on = true; this.g.visible = true; this.tgt = null; this.carry = 0; this.re = 0; }
   update(dt) {
     if (!this.on) return;
     if (hyp(this.x - PL.x, this.y - PL.y) > 650) { this.spawn(); return; }
@@ -3750,9 +3750,11 @@ class Rival extends Car {
   }
 }
 function updRival(dt) {
-  if (!RIV.on) { G.rivT -= dt; if (G.rivT <= 0) { RIV.spawn(); if (RIV.on) sms('Zentrale', 'Achtung, ein Uber-Fahrer wildert im Kiez. Schwarzer Wagen, grünes Schild. Der klaut uns die Kundschaft.'); else G.rivT = 3; } return; }
+  if (!RIV.on) { G.rivT -= dt; if (G.rivT <= 0) { RIV.spawn(); RIV.gone = 0; if (RIV.on) sms('Zentrale', G.rivN ? 'Schon wieder ein Uber im Kiez. Anderer Fahrer, gleiches grünes Schild.' : 'Achtung, ein Uber-Fahrer wildert im Kiez. Schwarzer Wagen, grünes Schild. Der klaut uns die Kundschaft.'); else G.rivT = 3; } return; }
   RIV.update(dt);
-  const i = carCar(PL, RIV); if (i > 0) { if (i > 5 && RIV.stun <= 0) { RIV.stun = 3.5; G.stats.rammed++; say(RIV.x, RIV.y, pick(RUBHIT)); } return i * .8; }
+  /* a rammed Uber has had enough: it clears off and only counts once. The next one turns up later, somewhere else */
+  if (RIV.gone) { RIV.gone += dt; RIV.carry = 99; if (RIV.gone > 12 || (RIV.gone > 4 && hyp(RIV.x - PL.x, RIV.y - PL.y) > 70)) { RIV.on = false; RIV.g.visible = false; G.rivT = rnd(30, 50); G.rivN = (G.rivN || 0) + 1; } }
+  const i = carCar(PL, RIV); if (i > 0) { if (i > 5 && RIV.stun <= 0 && !RIV.gone) { RIV.stun = 3.5; RIV.gone = .01; RIV.tgt = null; RIV.wp = randomSpot(); G.stats.rammed++; say(RIV.x, RIV.y, pick(RUBHIT)); } return i * .8; }
   return 0;
 }
 
@@ -3875,7 +3877,7 @@ const GOALPOOL = [
   { id: 'deliv', t: '4 Lieferungen abschließen', n: 4, v: () => G.stats.deliv, pay: 120 },
   { id: 'esc3', t: 'Einer 3-Sterne-Fahndung entkommen', n: 1, v: () => G.stats.esc3, pay: 150 },
   { id: 'clean', t: '1 Stunde ohne Kratzer fahren', n: 60, v: () => Math.floor(G.cleanBest), pay: 70 },
-  { id: 'ram', t: 'Uber 3-mal rammen', n: 3, v: () => G.stats.rammed, pay: 90 },
+  { id: 'ram', t: '3 Uber rammen', n: 3, v: () => G.stats.rammed, pay: 90 },
   { id: 'tips', t: '30 € Trinkgeld kassieren', n: 30, v: () => Math.floor(G.stats.tips), pay: 60 },
 ];
 function pickGoals() {
@@ -6563,16 +6565,16 @@ const DAILY = [
   { t: '40 Pfandflaschen in einer Nacht sammeln', n: 40, v: () => G.stats.pfand },
   { t: '600 € Gewinn in einer Nacht einfahren', n: 600, v: () => Math.floor(G.money - G.startMoney) },
   { t: 'Einen Drift 5 Sekunden halten', n: 5, v: () => Math.floor(G.stats.longDrift) },
-  { t: 'Einen Lauf von 6 Aufträgen schaffen', n: 6, v: () => G.laufBest },
+  { t: 'Einen Lauf von 6 Aufträgen schaffen', n: 6, v: () => G.laufBest, u: 'lauf' },
   { t: '50 € Trinkgeld in einer Nacht kassieren', n: 50, v: () => Math.floor(G.stats.tips) },
-  { t: 'Ein Rennen gewinnen', n: 1, v: () => G.stats.raceWin },
+  { t: 'Ein Rennen gewinnen', n: 1, v: () => G.stats.raceWin, u: 'rennen' },
   { t: '2 Stunden am Stück ohne Kratzer fahren', n: 120, v: () => Math.floor(G.cleanBest) },
-  { t: 'Uber 4-mal in einer Nacht rammen', n: 4, v: () => G.stats.rammed },
+  { t: '4 Uber in einer Nacht rammen', n: 4, v: () => G.stats.rammed },
   { t: '7 Kilometer in einer Nacht fahren', n: 7, v: () => Math.floor(G.stats.km) },
 ];
 const DAY_EUR = 200, DAY_XP = 60;
 const dayKey = () => { const d = new Date(); return String(d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate()); };
-const dayJob = () => DAILY[(Math.imul(+dayKey(), 2654435761) >>> 0) % DAILY.length];
+const dayJob = () => { const L = DAILY.filter(j => !j.u || unl(j.u)); return L[(Math.imul(+dayKey(), 2654435761) >>> 0) % L.length]; };   // only tasks you can already do
 const dayOpen = () => careerVis() && P.tut >= 2 && P.day !== dayKey();
 function dayTick() {
   if (!dayOpen() || !G.live || G.tutor) return; const j = dayJob(); if (j.v() < j.n) return;
