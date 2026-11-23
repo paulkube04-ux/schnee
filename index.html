@@ -559,6 +559,13 @@ body.touch .toast.ban { padding: 5px 14px 7px; } body.touch .toast.ban b { font-
 
 /* saver mode: no blur behind panels and cards, it costs a weak graphics chip a full extra pass every frame */
 body.spar * { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+.g-row button.g-down { background: rgba(255, 79, 160, .16); color: #ff8fc4; box-shadow: inset 0 0 0 1px rgba(255, 79, 160, .6); margin-right: 6px; padding: 8px 9px; }
+.g-row button { white-space: normal; max-width: 48%; flex-shrink: 0; } .g-row button.g-down { max-width: none; }
+#d-wish { font-family: var(--f-u); font-size: 17px; font-weight: 700; color: #3dffb5; background: rgba(61, 255, 181, .1); border-left: 3px solid #3dffb5; padding: 6px 10px; margin: 6px 0 8px; }
+#d-wish.bad { color: #ff8a7a; background: rgba(255, 90, 70, .1); border-color: #ff6a5a; }
+#los-coin { position: absolute; width: 34px; height: 34px; margin: -17px 0 0 -17px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #fff3c4, #e0b23a 55%, #9a7414); box-shadow: 0 2px 6px rgba(0,0,0,.5); pointer-events: none; }
+.d-range { display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; margin-bottom: 8px; border: 1px solid var(--line); border-radius: 4px; } .d-range .ol { font-weight: 700; font-size: 18px; } .d-range input { width: 100%; accent-color: #ff4fa0; }
+.d-rh { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; } .d-range .os { font-size: 16px; color: #ffd23d; font-weight: 700; }
 </style>
 </head>
 <body>
@@ -628,12 +635,12 @@ body.spar * { backdrop-filter: none !important; -webkit-backdrop-filter: none !i
       <div class="lab adm-l">Sofort</div>
       <div class="adm-grid">
         <button type="button" data-a="tele">Teleport</button><button type="button" data-a="hour">Uhr +1 h</button>
-        <button type="button" data-a="hail">Fahrgast</button><button type="button" data-a="vip">VIP-Fahrgast</button><button type="button" data-a="order">Bestellung</button>
+        <button type="button" data-a="hail">Fahrgast</button><button type="button" data-a="vip">VIP-Fahrgast</button><button type="button" data-a="ev">Kiez-Ereignis wählen</button><button type="button" data-a="wish">Taxi-Wunsch wählen</button><button type="button" data-a="order">Bestellung</button>
         <button type="button" data-a="stock">Ware voll</button><button type="button" data-a="mate">Mate voll</button><button type="button" data-a="kit">Koffer voll</button><button type="button" data-a="fix">Reparieren</button>
         <button type="button" data-a="rival">Uber</button><button type="button" data-a="event">Begegnung</button>
         <button type="button" data-a="rvhit">Revier −50 %</button><button type="button" data-a="abz">Abzieher</button><button type="button" data-a="fav">Gefallen</button><button type="button" data-a="mjob">Mischa-Auftrag</button><button type="button" data-a="atk">Angriff aufs Revier</button>
         <button type="button" data-a="block">Straßensperre</button><button type="button" data-a="heli">Hubschrauber</button>
-        <button type="button" data-a="race">Rennen</button><button type="button" data-a="night">Nacht beenden</button>
+        <button type="button" data-a="race">Rennen wählen</button><button type="button" data-a="tunedown">Tuning −1</button><button type="button" data-a="tune0">Tuning auf 0</button><button type="button" data-a="nogrip">Reifen-Bonus weg</button><button type="button" data-a="admreset">Admin-Garage zurücksetzen</button><button type="button" data-a="night">Nacht beenden</button>
         <button type="button" data-a="garage">Garage <kbd>B</kbd></button>
       </div>
     </div>
@@ -657,6 +664,7 @@ body.spar * { backdrop-filter: none !important; -webkit-backdrop-filter: none !i
   <div id="d-title"></div>
   <p id="d-text"></p>
   <p id="d-meta"></p>
+  <p id="d-wish" hidden></p>
   <div id="d-opts"></div>
 </div>
 
@@ -672,7 +680,7 @@ body.spar * { backdrop-filter: none !important; -webkit-backdrop-filter: none !i
 <div id="los" class="screen" hidden>
   <div class="los-card">
     <div class="los-top"><div><div class="lab" id="los-tag"></div><div id="los-name"></div></div><div id="los-max"></div></div>
-    <div class="los-wrap"><canvas id="los-base" width="480" height="300"></canvas><canvas id="los-cover" width="480" height="300"></canvas></div>
+    <div class="los-wrap"><canvas id="los-base" width="480" height="300"></canvas><canvas id="los-cover" width="480" height="300"></canvas><div id="los-coin" hidden></div></div>
     <div id="los-res"></div>
     <div class="los-btn"><button type="button" id="los-all">Alles aufrubbeln <kbd data-fix="ok">Enter</kbd></button><button type="button" id="los-ok" hidden>Weiter <kbd data-fix="ok">Enter</kbd></button></div>
   </div>
@@ -705,9 +713,9 @@ body.spar * { backdrop-filter: none !important; -webkit-backdrop-filter: none !i
   <div id="map-kz" hidden></div>
   <div id="padcur" hidden></div>
   <div class="legend">
-    <span><i class="r" style="--c:#ffd23d"></i>Fahrgast</span><span data-u="lauf"><i class="r" style="--c:#ffffff"></i>VIP</span><span><i class="r" style="--c:#7fe3ff"></i>Lieferung</span><span><i style="--c:#b56bff"></i>Ticker</span>
+    <span><i class="r" style="--c:#ffd23d"></i>Fahrgast</span><span><i class="r" style="--c:#7fe3ff"></i>Lieferung</span><span><i style="--c:#b56bff"></i>Ticker</span>
     <span><i style="--c:#3dffa0"></i>Mate</span><span><i style="--c:#ff8a3d"></i>Werkstatt</span><span data-u="lager"><i style="--c:#6b8cff"></i>Lager</span><span data-u="lager"><i style="--c:#ff6bf0"></i>Großticker</span><span data-u="bank"><i style="--c:#e6c86a"></i>Sparkasse</span>
-    <span data-u="rev"><i class="r" style="--c:#ff3b5c"></i>Fremder Läufer</span><span data-u="lager"><i style="--c:#ff9f43;clip-path:polygon(50% 0,100% 100%,0 100%)"></i>Dein Läufer</span><span data-u="lager"><i class="r" style="--c:#2ee6d6"></i>Gefallen</span><span data-u="rev"><i class="r" style="--c:#ff9f43"></i>Mischa</span><span data-u="rev"><i class="r" style="--c:#ff2a2a"></i>Angriff</span><span data-u="rennen"><i class="r" style="--c:#ff5a3c"></i>Rennen</span><span><i class="r" style="--c:#d6d6e6"></i>Kiez-Begegnung</span><span><i class="r" style="--c:#3f7dff"></i>Polizei</span><span><i class="r" style="--c:#3dffa0"></i>Uber</span><span><i class="r" style="--c:#ff2a2a"></i>Inkasso</span><span><i class="r" style="--c:#ff4fa0"></i>Markierung</span><span><i class="b" style="--c:#ff4f9a"></i>Sperre: hier endet der Kiez</span>
+    <span data-u="rev"><i class="r" style="--c:#ff3b5c"></i>Fremder Läufer</span><span data-u="lager"><i style="--c:#ff9f43;clip-path:polygon(50% 0,100% 100%,0 100%)"></i>Dein Läufer</span><span data-u="lager"><i class="r" style="--c:#2ee6d6"></i>Gefallen</span><span data-u="rev"><i class="r" style="--c:#ff9f43"></i>Mischa</span><span data-u="rev"><i class="r" style="--c:#ff2a2a"></i>Angriff</span><span data-u="rennen"><i class="r" style="--c:#111216;box-shadow:0 0 0 2px #fff inset"></i>Rennen</span><span><i class="r" style="--c:#d6d6e6"></i>Kiez-Begegnung</span><span><i class="r" style="--c:#3f7dff"></i>Polizei</span><span><i class="r" style="--c:#3dffa0"></i>Uber</span><span><i class="r" style="--c:#ff2a2a"></i>Inkasso</span><span><i class="r" style="--c:#ff4fa0"></i>Markierung</span><span><i class="b" style="--c:#ff4f9a"></i>Sperre: hier endet der Kiez</span>
     <span class="how">Ziehen verschiebt · Mausrad zoomt · Klick auf Punkt oder Straße: Navi dorthin</span>
   </div>
 </div>
@@ -1416,7 +1424,8 @@ function addLamp(x, y, main) {
   I.glow.add(x, y, .35, 0, main ? 36 : 27, 1, main ? 36 : 27, main ? 0x9a5c22 : (RW() < .25 ? 0x7f8a52 : 0x8e6a36));
 }
 const CROWN = [0x2f4a33, 0x3b5a34, 0x4f6b33, 0x7d6a2a, 0x8a5527, 0x6a4a2a, 0x2a3f2e, 0x93702b, 0x36523a];
-function addTree(x, y, s) {
+function addTree(x, y, s, isl) {
+  if (!isl && W.shash && W.shash.size) { const f = surfaceAt(x, y); if (f.seg && f.seg.st.c !== 4 && f.d < f.seg.st.w - 1) { (W.tSkip = W.tSkip || []).push([x, y, f.seg.st.name]); return; } }      // no trees out on the carriageway or the tram tracks
   const th = 3.4 * s;
   I.trunk.add(x, y, 0, 0, s, th, s, 0x3b3029);
   I.crown.add(x, y, th + 1.3 * s, RW() * 6, 2.5 * s * rr(.85, 1.15), 2.3 * s, 2.5 * s * rr(.85, 1.15), rpick(CROWN));
@@ -1519,7 +1528,7 @@ function buildAreas() {
       }
     }
   }
-  for (const r of W.d.isl) { const rd = dec(r); polyFlat(GND.isl, [rd], Y.isl, C('#2d4d3a'), 9); const c = centroid(rd); if (inBox(c[0], c[1])) addTree(c[0], c[1], 1.2); }
+  for (const r of W.d.isl) { const rd = dec(r); polyFlat(GND.isl, [rd], Y.isl, C('#2d4d3a'), 9); const c = centroid(rd); if (inBox(c[0], c[1])) addTree(c[0], c[1], 1.2, true); }
   buildOsm();
 }
 
@@ -2803,7 +2812,7 @@ const PASS = [
   { n: 'Podcasterin', q: '{d}, bitte. Darf ich Sie was fragen? Für die Folge „Menschen der Nacht“.', tip: 1 },
   { n: 'Lehrer nach dem Elternabend', q: '{d}. Und fahren Sie ruhig über Rot. Mir ist heute alles egal.', tip: 1.1, drift: 1 },
   { n: 'Schwäbische Vermieterin', q: 'Zum {d}. Was koscht des? So viel? Dann laufe mr halt … nei, fahret Se.', tip: .2 },
-  { n: 'Clubkid mit Glitzer', q: '{d}! Mach Bunker FM an, ich fühl’s noch!', tip: 1.2, drift: 1 },
+  { n: 'Clubkid mit Glitzer', q: '{d}! Ich fühl’s noch!', tip: 1.2, drift: 1, radio: 'bunker' },
   { n: 'Französischer Austauschschüler', q: 'Bonsoir. {d}, s’il vous plaît. C’est loin?', tip: .8, touri: 1 },
   { n: 'Handwerker mit Feierabendbier', q: '{d}, Meister. Keene Sorje, die Flasche is’ zu.', tip: 1.1 },
   { n: 'Schauspieler (kennt man)', q: '{d}. Und nein, ich bin es nicht. Doch, bin ich. Aber sagen Sie’s keinem.', tip: 1.7 },
@@ -3115,20 +3124,32 @@ function toScreen(x, y, h) { _v3.set(x, h, -y).project(camera); return _v3; }
 function dialog(o) {
   DLG = o; G.mode = 'dialog'; PL.vx = PL.vy = 0; PL.vf = PL.vr = 0;
   const el = $('dialog'); el.className = 'k-' + (o.kind || 'kiez'); el.hidden = false;
-  $('d-tag').textContent = o.tag; $('d-title').textContent = o.title; $('d-text').textContent = o.text || ''; $('d-meta').textContent = o.meta || ''; $('d-meta').hidden = !o.meta;
+  $('d-tag').textContent = o.tag; $('d-title').textContent = o.title; $('d-text').textContent = o.text || ''; $('d-meta').textContent = o.meta || ''; $('d-meta').hidden = !o.meta; $('d-wish').textContent = o.wish || ''; $('d-wish').hidden = !o.wish; $('d-wish').className = o.wishBad ? 'bad' : '';
   const box = $('d-opts'), sc = o.keep ? box.scrollTop : 0; box.textContent = '';
   o.opts.forEach((op, i) => {
+    if (op.range) {                                                  // a slider row: arrows or the stick move it, the option below it shows the result
+      const R = op.range, row = document.createElement('label'), t = document.createElement('span'), inp = document.createElement('input');
+      row.className = 'd-range'; inp.type = 'range'; inp.min = R.min; inp.max = R.max; inp.step = R.step || 1; inp.value = R.val; inp.dataset.i = i; t.className = 'ol';
+      const hd = document.createElement('span'), rt = document.createElement('span'); hd.className = 'd-rh'; rt.className = 'os'; hd.append(t, rt);
+      const upd = () => { R.val = +inp.value; t.textContent = R.fmt(R.val); rt.textContent = R.right ? R.right(R.val) : ''; if (R.on) R.on(R.val); };
+      inp.oninput = upd; row.append(hd, inp); box.append(row); R.upd = upd; return;
+    }
     const b = document.createElement('button'); b.type = 'button'; b.disabled = !!op.dis; b.dataset.i = i; if (op.cls) b.className = op.cls;
     const k = document.createElement('kbd'); k.textContent = i + 1; const l = document.createElement('span'); l.className = 'ol'; l.textContent = op.label;
     b.append(k, l); if (op.sub) { const s = document.createElement('span'); s.className = 'os'; s.textContent = op.sub; b.append(s); }
     b.onclick = () => choose(i); box.append(b);
   });
+  for (const op of o.opts) if (op.range) op.range.upd();
   box.scrollTop = sc;
+  if (!o.keep && typeof PAD !== 'undefined') {                       // a fresh window starts on the option marked focus (fill up the boot), else on the first
+    const fi = o.opts.findIndex(op => (op.focus || op.range) && !op.dis); PAD.focus = fi >= 0 ? '[data-i="' + fi + '"]' : null;
+    if (fi >= 0 && PAD.act) { const b = box.querySelector('input' + PAD.focus) || box.querySelector(PAD.focus); if (b) b.focus({ preventScroll: true }); }
+  }
   $('d-esc').hidden = !o.opts.some(op => op.esc);
 }
 /* options marked stay: the window opens again right away (re), so a shop does not close after every single purchase */
 function choose(i) {
-  if (!DLG) return; const D = DLG, op = D.opts[i]; if (!op || op.dis) return;
+  if (!DLG) return; const D = DLG, op = D.opts[i]; if (!op || op.dis || op.range) return;
   sfx('click'); DLG = null; $('dialog').hidden = true; G.mode = 'play';
   if (op.fn) op.fn();
   if (op.stay && D.re && G.mode === 'play' && !DLG) { D.re(); if (DLG) { DLG.keep = true; if (PAD.act) { const b = $('d-opts').querySelector('[data-i="' + i + '"]'); if (b && !b.disabled) b.focus(); } } }
@@ -3136,7 +3157,7 @@ function choose(i) {
 function closeDialog() { if (!DLG) return false; const i = DLG.opts.findIndex(o => o.esc && !o.dis); if (i < 0) return false; choose(i); return true; }
 
 /* ---------- markers ---------- */
-const MKCOL = { hail: 0xffd23d, dest: 0xffb01f, order: 0x7fe3ff, depot: 0xb56bff, spaeti: 0x3dffa0, werk: 0xff8a3d, event: 0xd6d6e6, pin: 0xff4fa0, lager: 0x6b8cff, gross: 0xff6bf0, bank: 0xe6c86a, race: 0xff5a3c, fin: 0xff5a3c, runner: 0xff3b5c, fight: 0xff2a2a }, _mkmat = {};
+const MKCOL = { hail: 0xffd23d, dest: 0xffb01f, order: 0x7fe3ff, depot: 0xb56bff, spaeti: 0x3dffa0, werk: 0xff8a3d, event: 0xd6d6e6, pin: 0xff4fa0, lager: 0x6b8cff, gross: 0xff6bf0, bank: 0xe6c86a, race: 0x111216, fin: 0x111216, runner: 0xff3b5c, fight: 0xff2a2a }, _mkmat = {};
 const MKCSS = {}; for (const k in MKCOL) MKCSS[k] = '#' + MKCOL[k].toString(16).padStart(6, '0');
 const MKSQ = { depot: 1, werk: 1, spaeti: 1, lager: 1, gross: 1, bank: 1 };          // drawn as squares on the maps: places that stay where they are
 function mkLabel(m) {
@@ -3152,24 +3173,28 @@ function mkLabel(m) {
   if (m.type === 'lager') return (P.lager[m.ref.id] ? 'Dein Lager: ' : 'Lager zu vermieten: ') + m.ref.name;
   if (m.type === 'bank') return 'Sparkasse ' + m.ref.name;
   if (m.type === 'race') return 'Rennen: ' + m.ref.who;
-  if (m.type === 'fin') return 'Ziellinie';
+  if (m.type === 'fin') return m.ref && m.ref.name && m.ref.name !== 'Ziel' ? m.ref.name : 'Ziellinie';
   return m.ref.name;
 }
 function mkMarker(type, spot, ref, r) {
   r = r || 4.8;
+  const dark = type === 'race' || type === 'fin';            // races are black: a dark column with a white ring, light could not add up to black
   if (!_mkmat[type]) _mkmat[type] = [
-    new THREE.MeshBasicMaterial({ color: MKCOL[type], blending: THREE.AdditiveBlending, transparent: true, depthWrite: false, side: THREE.DoubleSide, opacity: .95 }),
-    new THREE.MeshBasicMaterial({ color: MKCOL[type], map: TEX.beam, blending: THREE.AdditiveBlending, transparent: true, depthWrite: false, side: THREE.DoubleSide, opacity: .5 })];
+    new THREE.MeshBasicMaterial({ color: dark ? 0xffffff : MKCOL[type], blending: THREE.AdditiveBlending, transparent: true, depthWrite: false, side: THREE.DoubleSide, opacity: dark ? .8 : .95 }),
+    new THREE.MeshBasicMaterial({ color: MKCOL[type], map: TEX.beam, blending: dark ? THREE.NormalBlending : THREE.AdditiveBlending, transparent: true, depthWrite: false, side: THREE.DoubleSide, opacity: dark ? .85 : .5 })];
   const g = new THREE.Group(), ring = new THREE.Mesh(RING_GEO, _mkmat[type][0]), beam = new THREE.Mesh(BEAM_GEO, _mkmat[type][1]);
   ring.scale.set(r, 1, r); beam.scale.set(r * .45, 1, r * .45); beam.renderOrder = 5; ring.renderOrder = 5; g.add(ring, beam); g.position.set(spot.x, .3, -spot.y); scene.add(g);
   const m = { type, x: spot.x, y: spot.y, r, ref, spot, g, ring, cool: false, dwell: 0, off: false }; MK.push(m); return m;
 }
 function rmMarker(m) { if (!m) return; scene.remove(m.g); const i = MK.indexOf(m); if (i >= 0) MK.splice(i, 1); }
 function mkShow(m, on) { m.off = !on; m.g.visible = on; }
+const mkHid = m => m.off || (G.race && m.type !== 'fin' && m.type !== 'pin');      // during a race only the finish (and your own map pin) is shown
 function checkMarkers(dt) {
   const sp = PL.speed();
+  const fm = G.fare && G.fare.mk, atDest = fm && !fm.off && hyp(fm.x - PL.x, fm.y - PL.y) <= fm.r + 1;      // the passenger's destination comes first, even when it is a Mate place
   for (const m of MK) {
     if (m.off || m.type === 'fin') continue;
+    if (atDest && m !== fm) continue;
     const d = hyp(m.x - PL.x, m.y - PL.y);
     m.ring.scale.setScalar(m.r * (1 + .07 * Math.sin(G.t * 4 + m.x)));
     if (d > m.r + 3) { m.cool = false; m.dwell = 0; continue; }
@@ -3188,7 +3213,9 @@ function openMarker(m) {
 }
 
 /* ---------- taxi fares ---------- */
+const taxiOff = () => !!(P && P.seen && P.seen.taxiEnd);      // after Big M the taxi licence is gone: no more fares, no Uber
 function newHail(minD, maxD) {
+  if (taxiOff()) return;
   minD = minD || 130; maxD = maxD || 620;
   for (let k = 0; k < 30; k++) {
     const spot = minD < 100 ? spotNear(PL.x + rnd(-40, 40), PL.y + rnd(-40, 40)) : randomSpot(), d = hyp(spot.x - PL.x, spot.y - PL.y); if (d < minD || d > maxD) continue;
@@ -3198,19 +3225,24 @@ function newHail(minD, maxD) {
     const r = routeBetween(spot.x, spot.y, dest.x, dest.y); if (!r || r.dist < 320 || r.dist > 1500) continue;
     const ped = HPED.find(p => !p.on); if (!ped) return;
     const h = { spot, dest, dname, dist: r.dist, p: pick(PASS), pay: Math.round((6 + r.dist / 1000 * 4.5) * 10) / 10, life: rnd(110, 170), ped };
-    if (vipRoll()) { h.vip = true; h.p = pick(VIPS); h.pay = Math.round(h.pay * 25) / 10; h.life = rnd(75, 100); G.vipSoon = false; }      // rare, well paid, impatient
-    ped.stand(spot.px, spot.py); h.mk = mkMarker('hail', spot, h, h.vip ? 6.6 : 0); if (h.vip) vipLook(h.mk); G.hails.push(h);
-    if (h.vip) { sms('Zentrale', 'VIP wartet: ' + spot.name + '. Zahlt das Zweieinhalbfache, wartet aber nicht lange.'); sfx('good'); }
+    if (vipRoll()) { h.vipS = true; G.vipSoon = false; }      // one in eight is somebody famous, but you only find out when you stop for them
+    ped.stand(spot.px, spot.py); h.mk = mkMarker('hail', spot, h, 0); G.hails.push(h);
     return;
   }
 }
 function dropHail(h) { rmMarker(h.mk); h.ped.kill(); const i = G.hails.indexOf(h); if (i >= 0) G.hails.splice(i, 1); }
 function dlgHail(h) {
+  if (h.vipS && !h.vip) { h.vip = true; h.p = pick(VIPS); h.pay = Math.round(h.pay * 25) / 10; sfx('good'); }
   const km = (h.dist / 1000).toLocaleString('de-DE', { maximumFractionDigits: 1 });
-  dialog({
-    kind: 'taxi', tag: h.vip ? 'VIP' : 'Fahrgast', title: h.p.n, text: '„' + h.p.q.replace(/\{d\}/g, h.dname) + '“', meta: 'Ziel: ' + h.dname + ' · ' + km + ' km · Taxameter ca. ' + eur(h.pay) + (h.vip ? ' · zahlt das Zweieinhalbfache' : ''),
+  if (h.w === undefined) {                                     // the wish is known before you let them in, with what it pays
+    const fw = h.fw || (h.p.radio ? 'sender' : null);
+    h.w = fw ? fareWish(h, fw) : !G.tutor && Math.random() < .5 ? fareWish(h) : null;
+  }
+  const w = h.w;
+  dialog({ wish: w ? (w.lost ? w.say : 'Wunsch: ' + w.txt + ' → +' + eur0(w.b) + ' extra Trinkgeld, wenn du’s schaffst') : '', wishBad: w && w.lost,
+    kind: 'taxi', tag: h.vip ? 'VIP' : 'Fahrgast', title: h.p.n, text: '„' + h.p.q.replace(/\{d\}/g, h.dname) + (w && !w.lost ? ' ' + w.say : '') + '“', meta: 'Ziel: ' + h.dname + ' · ' + km + ' km · Taxameter ca. ' + eur(h.pay) + (h.vip ? ' · zahlt das Zweieinhalbfache' : ''),
     opts: [
-      { label: 'Einsteigen lassen', sub: 'Uhr läuft', fn: () => startFare(h, 1) },
+      { label: 'Einsteigen lassen', sub: w && !w.lost ? 'Uhr läuft · +' + eur0(w.b) + ' möglich' : 'Uhr läuft', fn: () => startFare(h, 1) },
       { label: 'Stehen lassen', esc: 1, fn: () => { } },
     ]
   });
@@ -3220,16 +3252,78 @@ function startFare(h, mult) {
   G.fare = { p: h.p, dest: h.dest, dname: h.dname, pay: Math.round(h.pay * mult * 10) / 10, dist: h.dist, par: h.dist / 9.5 + 14, t: 0, hits: 0, vip: !!h.vip };
   G.fare.mk = mkMarker('dest', h.dest, null, 5.4); G.routeT = 0;
   toast('Fahrgast an Bord. Ziel: ' + h.dname);
+  if (h.w) wishApply(G.fare, h.w);
+}
+let TAILC = null;      // the black car of the 'I am being followed' wish
+/* passenger wishes: said out loud when they get in, shown under the fare, and paid as a fixed extra tip if you keep to them */
+const WISHES = ['eilig', 'meiden', 'stopp', 'ruhe', 'kratzer', 'turbo', 'sender', 'klo', 'tail'];
+function fareWish(h, force) {
+  const f = { par: h.dist / 9.5 + 14, vip: !!h.vip, hits: 0 };
+  const r = routeBetween(PL.x, PL.y, h.dest.x, h.dest.y), names = new Set(), st0 = (nearestSeg(PL.x, PL.y, false, 3) || {}).seg, st1 = (nearestSeg(h.dest.x, h.dest.y, false, 3) || {}).seg;
+  if (r) for (let i = 2; i < r.pts.length - 2; i++) { const ns = nearestSeg(r.pts[i][0], r.pts[i][1], false, 2); if (ns && ns.seg.st.name && (!st0 || ns.seg.st !== st0.st) && (!st1 || ns.seg.st !== st1.st)) names.add(ns.seg.st.name); }
+  const opts = ['eilig', 'stopp', 'ruhe', 'kratzer', 'sender', 'sender', 'klo', 'tail']; if (names.size) opts.push('meiden'); if (G.mate > 0) opts.push('turbo');
+  let k = force || pick(opts); if (k === 'meiden' && !names.size) k = 'eilig';
+  const b = pick([8, 10, 12, 15]) * (f.vip ? 2 : 1), w = { k, b, ok: true };
+  if (k === 'eilig') { w.lim = Math.round(f.par * .4); w.say = 'Ich hab’s eilig! In ' + w.lim + ' Sekunden da, dann lohnt sich’s für dich.'; w.txt = 'In ' + w.lim + ' s am Ziel'; }
+  else if (k === 'meiden') { w.st = pick([...names]); w.say = 'Bitte nicht über die ' + w.st + '. Da wohnt meine Ex.'; w.txt = 'Nicht über die ' + w.st; }
+  else if (k === 'stopp') { w.say = 'Kannst du kurz an ’ner grünen Säule halten? Ich brauch ’ne Mate. Oder zwei.'; w.txt = 'Unterwegs an einer grünen Säule halten'; w.ok = false; }
+  else if (k === 'kratzer') { w.h0 = f.hits; w.say = 'Bitte keine Kratzer! Das ist mein Hochzeitsanzug, und ich bin spät dran.'; w.txt = 'Keine Berührung, die ganze Fahrt'; }
+  else if (k === 'turbo') { w.say = 'Ey, ich hab gehört, du hast Turbo-Mate. Zeig mal, was die Karre kann!'; w.txt = 'Unterwegs eine Turbo-Mate trinken'; w.ok = false; }
+  else if (k === 'sender') {                                   // every station has its fans; if you do not have it, they tell you to get it
+    const ri = h.p.radio ? STATIONS.findIndex(s => s && s.id === h.p.radio) : -1, i = ri > 0 ? ri : 1 + Math.floor(Math.random() * (STATIONS.length - 1)), S = STATIONS[i]; w.st = i; w.grace = 6;
+    w.say = pick(['Mach mal ' + S.n + ' an, das ist mein Sender!', 'Läuft bei dir ' + S.n + '? Das brauch ich jetzt.', 'Bitte ' + S.n + '. Ohne fahr ich nicht gern.']); w.txt = S.n + ' laufen lassen';
+    if (!radioHas(i)) { w.lost = true; w.ok = false; w.say = 'Was, du hast ' + S.n + ' nicht? Leg dir den mal zu, gibt’s in der Garage unter Extras.'; w.txt = S.n + ' (hast du nicht)'; }
+  }
+  else if (k === 'klo') {                                      // the destination changes to the nearest Mate place, shorter and very well paid
+    const sp = POI.spaeti.slice().sort((a, b) => hyp(a.x - PL.x, a.y - PL.y) - hyp(b.x - PL.x, b.y - PL.y)).find(a => hyp(a.x - PL.x, a.y - PL.y) > 80);
+    if (sp) { w.sp = sp; const rr = routeBetween(PL.x, PL.y, sp.x, sp.y), d = rr ? rr.dist : hyp(sp.x - PL.x, sp.y - PL.y); w.par = d / 9.5 + 14; w.lim = Math.round(w.par * .45); w.b = 20 * (f.vip ? 2 : 1); }
+    else w.lim = Math.round(f.par * .4);
+    w.say = 'Aber erst: Ich muss mal! Ganz dringend! Zur nächsten Kneipe, schnell!'; w.txt = 'Schnell aufs Klo: ' + (sp ? sp.name : h.dname) + ' in ' + w.lim + ' s';
+  }
+  else if (k === 'tail') {                                     // a black car hangs on: shake it off before you arrive
+    w.ok = false; w.far = 0;
+    w.say = 'Scheiße, der schwarze Wagen da hinten … der folgt mir. Häng den ab, bitte!'; w.txt = 'Den schwarzen Wagen abhängen';
+  }
+  else { w.say = 'Kein Radio, bitte. Ich hab Kopfweh.'; w.txt = 'Radio aus, die ganze Fahrt'; w.grace = 4; }
+  return w;
+}
+function wishApply(f, w) {                                      // the wish becomes real once they sit in the car
+  if (w.k === 'klo' && w.sp) { rmMarker(f.mk); f.dest = w.sp.spot; f.dname = w.sp.name; f.mk = mkMarker('dest', w.sp.spot, null, 5.4); G.routeT = 0; f.par = w.par; }
+  if (w.k === 'tail') { if (!TAILC) TAILC = new Goon(); TAILC.spawn(50, 90); TAILC.leave = false; }
+  if (w.k === 'turbo' && G.mate <= 0) G.mate = 1;
+  if (w.k === 'kratzer') w.h0 = f.hits;
+  f.wish = w; say(PL.x, PL.y, w.say);
+  if (w.lost) toast(w.say, 'bad'); else toast('Wunsch: ' + w.txt + '. Erfüllst du ihn, gibt’s ' + eur0(w.b) + ' extra Trinkgeld.', 'good');
+}
+function wishLine(f) {                                          // the wish under the fare: a live countdown when it is about time
+  const w = f.wish, timed = w.k === 'eilig' || w.k === 'klo';
+  if (w.lost) return '✗ Wunsch verpasst' + (w.why ? ': ' + w.why : '');
+  if (timed) return 'Wunsch: noch ' + Math.max(0, Math.ceil(w.lim - f.t)) + ' s bis zum Ziel · +' + eur0(w.b);
+  return ((w.k === 'stopp' || w.k === 'turbo' || w.k === 'tail') && w.ok ? '✓ ' : '') + 'Wunsch: ' + w.txt + ' · +' + eur0(w.b);
+}
+function wishTick(f, dt) {
+  const w = f.wish; if (!w || w.lost) return;
+  const lose = why => { w.lost = true; w.ok = false; w.why = why; toast('Wunsch nicht erfüllt: ' + why + '. Die ' + eur0(w.b) + ' extra sind weg.', 'bad'); sfx('bad'); };
+  if (w.k === 'eilig' && f.t > w.lim) lose('zu langsam');
+  else if (w.k === 'meiden') { const ns = nearestSeg(PL.x, PL.y, false, 2); if (ns && ns.seg.st.name === w.st && ns.d < ns.seg.st.w) lose('du bist über die ' + w.st + ' gefahren'); }
+  else if (w.k === 'stopp' && !w.ok && PL.speed() < 2 && POI.spaeti.some(s => hyp(s.x - PL.x, s.y - PL.y) < 14)) { w.ok = true; toast('Stopp gemacht. Der Fahrgast ist glücklich, das Trinkgeld steht.', 'good'); sfx('good'); }
+  else if (w.k === 'ruhe') { if (w.grace > 0) w.grace -= dt; else if (AU.radio) lose('das Radio lief'); }
+  else if (w.k === 'sender') { if (w.grace > 0) w.grace -= dt; else if (AU.radio !== w.st) lose(STATIONS[w.st].n + ' lief nicht'); }
+  else if (w.k === 'klo' && f.t > w.lim) lose('zu spät, es ist passiert');
+  else if (w.k === 'tail') { const c = TAILC; if (c && c.on && !w.ok) { c.update(dt); w.far = c.near > 110 ? w.far + dt : 0; if (w.far > 4) { w.ok = true; c.leave = true; toast('Abgehängt! Der Fahrgast atmet auf, das Trinkgeld steht.', 'good'); sfx('good'); } } else if (c && c.on) c.update(dt); }
+  else if (w.k === 'kratzer' && f.hits > w.h0) lose('es hat gekracht, oder du bist zu wild gefahren');
+  else if (w.k === 'turbo' && !w.ok && G.turbo > 0) { w.ok = true; toast('„Jaaa!“ Der Fahrgast jubelt, das Trinkgeld steht.', 'good'); sfx('good'); }
 }
 function dlgArrive() {
   const f = G.fare; if (!f) return;
   const late = f.t > f.par * 1.6, q = clamp((1.5 - f.t / f.par) / .7, 0, 1);
   let tip = Math.max(0, Math.round((f.pay * .42 * q * f.p.tip - f.hits * .8) * 2) / 2 + (f.bonus || 0)); if (G.karma) { tip *= 2; }
+  const w = f.wish, wOk = w && w.ok && !w.lost; if (wOk) tip += w.b;
   const pay = Math.round((late ? f.pay * .6 : f.pay) * rankPay() * 10) / 10;                       // every career rank adds 2 %
   const line = f.flee ? 'Hier raus. Du hast mich nie gesehen.' : late ? 'Das war ja ’ne Weltreise. Ich zahl nur die Hälfte. Na gut, sechzig Prozent.' : f.hits > 2 ? 'Mir ist schlecht. Aber wir sind da.' : q > .7 ? 'Das ging fix. Stimmt so.' : 'Passt schon.';
-  const done = (p, t) => { G.stats.fares++; if (f.vip) G.stats.vip++; G.stats.fareEur += p; G.stats.tips += t; earn(p + t); if (t > 0) toast('Trinkgeld: ' + eur(t), 'good'); G.karma = 0; rmMarker(f.mk); G.fare = null; G.routeT = 0; jobDone('fare', p, f.vip); };
+  const done = (p, t) => { if (TAILC && TAILC.on) TAILC.leave = true; G.stats.fares++; if (f.vip) G.stats.vip++; G.stats.fareEur += p; G.stats.tips += t; earn(p + t); if (t > 0) toast('Trinkgeld: ' + eur(t), 'good'); G.karma = 0; rmMarker(f.mk); G.fare = null; G.routeT = 0; jobDone('fare', p, f.vip); };
   dialog({
-    kind: 'taxi', tag: 'Angekommen', title: f.dname, text: '„' + line + '“', meta: f.p.n + ' · Fahrpreis ' + eur(pay) + (tip ? ' · Trinkgeld ' + eur(tip) : ''),
+    kind: 'taxi', tag: 'Angekommen', title: f.dname, text: '„' + line + '“', meta: f.p.n + ' · Fahrpreis ' + eur(pay) + (tip ? ' · Trinkgeld ' + eur(tip) : '') + (w ? (wOk ? ' · Wunsch erfüllt: +' + eur0(w.b) + ' im Trinkgeld' : ' · Wunsch nicht erfüllt') : ''),
     opts: [
       { label: 'Kassieren', sub: eur(pay + tip), fn: () => done(pay, tip) },
       { label: 'Umweg draufschlagen', sub: '+50 %, riskant', fn: () => { if (Math.random() < (f.p.touri ? .7 : .45)) { toast('Hat keiner gemerkt.'); done(Math.round(pay * 15) / 10, 0); } else { toast('Beschwerde bei der Zentrale. 20 € Abzug.', 'bad'); sfx('bad'); done(pay, 0); pay2(20, 'fines'); } } },
@@ -3327,7 +3421,7 @@ function dlgDepot(d) {
   opts.push({ label: '1 Päckchen', sub: each(1), dis: !can(1), stay: 1, fn: () => buy(1) }, { label: '3 Päckchen', sub: each(3), dis: !can(3), stay: 1, fn: () => buy(3) });
   if (G.maxStock >= 7) opts.push({ label: '6 Päckchen', sub: each(6), dis: !can(6), stay: 1, fn: () => buy(6) });
   if (G.maxStock > TICK_BULK) opts.push({ label: TICK_BULK + ' Päckchen', sub: each(TICK_BULK), dis: !can(TICK_BULK), stay: 1, fn: () => buy(TICK_BULK) });
-  opts.push({ label: 'Vollmachen', sub: free > 0 ? free + ' Stück, ' + each(free) : 'Kofferraum ist voll', dis: !can(free), stay: 1, fn: () => buy(free) });
+  opts.push({ label: 'Vollmachen', focus: 1, sub: free > 0 ? free + ' Stück, ' + each(free) : 'Kofferraum ist voll', dis: !can(free), stay: 1, fn: () => buy(free) });
   if (rich) opts.push(kOpt);
   opts.push({ label: 'Nix, danke', esc: 1, fn: () => { } });
   dialog({
@@ -3443,7 +3537,14 @@ function dlgInkasso() {
 
 /* ---------- Mate turbo: carried along (max 3), short and strong, with lots of grip ---------- */
 const TURBO_T = 6;
+function adminRace(sp, mult) {
+  if (G.race) endRace(false, null, true); if (G.fare) { rmMarker(G.fare.mk); G.fare = null; } G.heat = 0; G.raced = {};
+  const s = spotNear(PL.x, PL.y); let m;
+  if (sp) { P.sp[sp.id] = 0; m = sp.course ? raceMark(sp) : mkMarker('race', s, { who: sp.who, R: sp, sp }, 5); m.met = 1; startRace(m, 0); }      // story races start at their own spot, so the course is the real one
+  else { const R = pick(RACERS); m = mkMarker('race', s, { who: R.who, R }, 4.6); startRace(m, mult * (40 + 20 * Math.min(P.night, 8))); }
+}
 function useTurbo() {
+  if (G.race && G.race.rule === 'noturbo') { toast('Ohne Turbo, so war’s abgemacht.', 'bad'); return; }
   if (G.mode !== 'play' || G.turbo > 0) return;
   if (G.mate <= 0) { toast('Keine Mate mehr dabei. Grüne Säulen verkaufen welche.'); sfx('bad'); return; }
   G.mate--; G.turbo = TURBO_T; G.usedTurbo = true; CAM.shake = Math.max(CAM.shake, .35); sfx('turbo'); pop('TURBO', 'plus'); rumble(.5, .8, 350); setTimeout(() => rumble(.08, .3, (TURBO_T - .4) * 1000), 380);
@@ -3501,11 +3602,11 @@ function getaway() {
 const EVENTS = [
   () => ({ tag: 'Kiez', title: 'Typ mit Sporttasche', text: '„Fahr! Fahr einfach! Nicht fragen!“ Hinter ihm heult eine Alarmanlage.', opts: [{ label: 'Reinspringen lassen', sub: G.fare ? 'Du hast schon einen Fahrgast' : '250 € am Ziel, die Polizei ist sofort hinter dir her', dis: !!G.fare, fn: getaway }, { label: 'Türen verriegeln', esc: 1, fn: () => { } }] }),
   () => ({ tag: 'Kiez', title: 'Flaschensammler Manne', text: '„Haste ma ’n Fünfer? Ick sag dir ooch, wo die Bullen stehn.“', opts: [{ label: 'Fünfer geben', sub: '5 €, Streifen 2 Minuten auf der Karte', dis: G.money < 5, fn: () => { pay(5, 'shop'); G.funkT = 120; toast('Manne zeigt mit dem Daumen: „Zwee Streifen, da und da.“', 'good'); } }, { label: 'Weiterfahren', esc: 1, fn: () => { } }] }),
-  () => ({ tag: 'Kiez', title: 'Tourist mit Rollkoffer', text: '„Excuse me, where is Berghain?“', opts: [{ label: 'Weg erklären', sub: 'Karma', fn: () => { G.karma = 1; toast('Gute Tat. Der nächste Fahrgast gibt doppelt Trinkgeld.', 'good'); } }, { label: '„Steig ein. 60 Euro, Festpreis.“', sub: 'Du fährst ihn einmal um den Block', fn: () => { earn(60); G.stats.fareEur += 60; toast('Er hat nichts gemerkt. Du schon.'); } }, { label: 'Weiterfahren', esc: 1, fn: () => { } }] }),
+  () => ({ tag: 'Kiez', title: 'Tourist mit Rollkoffer', text: '„Excuse me, where is Berghain?“', opts: [{ label: 'Weg erklären', sub: 'Karma', fn: () => { G.karma = 1; toast('Gute Tat.' + (taxiOff() ? ' Das Universum merkt sich das.' : ' Der nächste Fahrgast gibt doppelt Trinkgeld.'), 'good'); } }, { label: '„Steig ein. 60 Euro, Festpreis.“', sub: 'Du fährst ihn einmal um den Block', fn: () => { earn(60); G.stats.fareEur += 60; toast('Er hat nichts gemerkt. Du schon.'); } }, { label: 'Weiterfahren', esc: 1, fn: () => { } }] }),
   () => ({ tag: 'Kiez', title: 'Ordnungsamt', text: '„Sie stehen im absoluten Halteverbot. Das macht fünfundzwanzig Euro.“', opts: [{ label: 'Zahlen', sub: '25 €', fn: () => pay(25, 'fines') }, { label: 'Diskutieren', sub: 'Kann teurer werden', fn: () => { if (Math.random() < .5) toast('„Na gut. Aber nur dieses eine Mal.“', 'good'); else { pay(55, 'fines'); toast('„Jetzt sind’s fünfundfünfzig.“', 'bad'); } } }, { label: 'Gas geben', sub: 'Die funken das durch', fn: () => addHeat(1, 'Das Ordnungsamt hat dich gemeldet.') }] }),
   () => ({ tag: 'Kiez', title: 'Typ im Hauseingang', text: '„Brauchste Winterreifen? Janz neu. Fast.“', opts: [{ label: 'Kaufen', sub: G.grip2 ? 'Hast du schon' : '80 €, mehr Grip, bleiben drauf', dis: G.money < 80 || G.grip2 > 0, fn: () => { pay(80, 'shop'); G.grip2 = 1.2; toast('Die Reifen sind tatsächlich gut. Woher die sind, fragst du nicht.', 'good'); } }, { label: 'Nee, lass ma', esc: 1, fn: () => { } }] }),
   () => ({ tag: 'Kiez', title: 'Junggesellinnenabschied', text: '„Dürfen wir ein Foto mit dem Auto? Biiitte! Wir zahlen auch!“', opts: [{ label: 'Posieren', sub: '+10 €', fn: () => earn(10) }, { label: 'Hupen und weg', esc: 1, fn: () => sfx('horn') }] }),
-  () => ({ tag: 'Kiez', title: 'Oma Erna', text: '„Junger Mann, tragen Sie mir die Tüten hoch? Vierter Stock, Hinterhaus.“', opts: [{ label: 'Helfen', sub: 'Kostet 10 Minuten, bringt Karma', fn: () => { G.clock += 10; G.karma = 1; toast('Es gab einen Eierlikör. Der nächste Fahrgast gibt doppelt Trinkgeld.', 'good'); } }, { label: '„Keine Zeit, Muttchen.“', esc: 1, fn: () => { } }] }),
+  () => ({ tag: 'Kiez', title: 'Oma Erna', text: '„Junger Mann, tragen Sie mir die Tüten hoch? Vierter Stock, Hinterhaus.“', opts: [{ label: 'Helfen', sub: 'Kostet 10 Minuten, bringt Karma', fn: () => { G.clock += 10; G.karma = 1; toast('Es gab einen Eierlikör.' + (taxiOff() ? ' Das Universum merkt sich das.' : ' Der nächste Fahrgast gibt doppelt Trinkgeld.'), 'good'); } }, { label: '„Keine Zeit, Muttchen.“', esc: 1, fn: () => { } }] }),
   () => ({ tag: 'Kiez', title: 'Straßenmusiker', text: 'Er spielt „Wonderwall“. Zum vierten Mal. Er sieht dich an. Er hört nicht auf.', opts: [{ label: 'Zwei Euro in den Hut', sub: 'Karma', dis: G.money < 2, fn: () => { pay(2, 'shop'); G.karma = 1; toast('Er wechselt zu „Über sieben Brücken“. Immerhin.', 'good'); } }, { label: 'Hupen, bis er aufhört', fn: () => { sfx('horn'); toast(Math.random() < .5 ? 'Er hört auf. Die Nachbarn klatschen.' : 'Er spielt jetzt lauter.'); } }, { label: 'Fenster hoch', esc: 1, fn: () => { } }] }),
   () => ({ tag: 'Kiez', title: 'Flohmarkt-Fritze', text: '„Blitzer-App, Vollversion, auf’m gebrannten Handy. Zeigt dir heute Nacht jeden Kasten. Vierzig.“', opts: [{ label: 'Kaufen', sub: G.up.radar ? 'Hast du schon was Besseres' : '40 €, Blitzer auf der Karte bis Feierabend', dis: G.money < 40 || G.up.radar > 0, fn: () => { pay(40, 'shop'); G.up.radar = 1; toast('Läuft. Das Handy riecht nach Bratwurst.', 'good'); } }, { label: 'Nee', esc: 1, fn: () => { } }] }),
   () => ({ tag: 'Kiez', title: 'Papa auf dem Lastenrad', text: '„Sie stehen auf dem Radweg! Da fahren Kinder! Ich filme das!“', opts: [{ label: 'Entschuldigen', sub: 'kostet Stolz', esc: 1, fn: () => toast('„Geht doch.“ Er filmt trotzdem weiter.') }, { label: 'Diskutieren', sub: 'kostet 10 Minuten', fn: () => { G.clock += 10; toast('Ihr einigt euch darauf, dass ihr euch nicht einigt.'); } }, { label: 'Hupen', sub: 'er hat die Nummer vom Abschnitt', fn: () => { sfx('horn'); if (Math.random() < .35) addHeat(1, 'Der Lastenrad-Papa hat dich angezeigt.'); else toast('Er schimpft dir zwei Straßen weit hinterher.'); } }] }),
@@ -3517,6 +3618,18 @@ const EVENTS = [
   () => ({ tag: 'Kiez', title: 'Späti-Mann mit Sackkarre', text: '„Meister, die Palette muss um die Ecke. Hilfste kurz? Kriegste ooch wat Kaltes.“', opts: [{ label: 'Anpacken', sub: G.mate < G.mateMax ? '+1 Mate' : 'Becherhalter voll, aber nett sein kostet nix', fn: () => { if (G.mate < G.mateMax) { G.mate++; toast('Eine Mate für unterwegs.', 'good'); } else { G.karma = 1; toast('Kein Platz für die Mate, aber Karma gibt’s trotzdem.', 'good'); } } }, { label: 'Hab’s eilig', esc: 1, fn: () => { } }] }),
   () => ({ tag: 'Kiez', title: 'Makler im Maßanzug', text: '„Sie sehen aus, als bräuchten Sie Stauraum. Diskret, trocken, keine Fragen.“', opts: [{ label: 'Wo denn?', sub: 'zeigt dir das nächste freie Lager', fn: () => lagerHint() }, { label: 'Kein Interesse', esc: 1, fn: () => { } }] }),
   () => ({ tag: 'Kiez', title: 'Kneipenwirtin', text: '„Der Typ am Tresen hat seine Brieftasche vergessen. Fährste die hinterher? Der gibt bestimmt wat.“', opts: [{ label: 'Machen', sub: 'Finderlohn, vielleicht', fn: () => { const v = pick([0, 10, 20, 50]); if (v) earn(v); toast(v ? 'Finderlohn: ' + eur0(v) + '.' : 'Er sagt „danke“ und macht die Tür zu.', v ? 'good' : ''); } }, { label: 'Is’ nich mein Problem', esc: 1, fn: () => { } }] }),
+  () => ({ tag: 'Kiez', title: 'Waschbär im Container', text: 'Aus dem Biomüll guckt ein Waschbär. Er hat eine Pizzaschachtel und keine Angst vor dir.', opts: [{ label: 'Deckel aufhalten', sub: 'Karma, und er lässt dir was da', fn: () => { G.karma = 1; if (Math.random() < .5) { earn(12); toast('In der Schachtel lagen zwölf Euro. Der Waschbär nickt.', 'good'); } else toast('Er nimmt die Pizza und geht. Respekt.', 'good'); } }, { label: 'Weiterfahren', esc: 1, fn: () => { } }] }),
+  () => ({ tag: 'Kiez', title: 'Mieterversammlung auf dem Gehweg', text: '„Da drüben parkt der Vermieter. Der Porsche. Einmal kräftig hupen, für uns alle?“', opts: [{ label: 'Lange hupen', sub: 'die Straße jubelt · die Streife hört es vielleicht', fn: () => { sfx('horn'); addXp(15); G.karma = 1; if (G.seen) offence(.5, 'Ruhestörung vor den Augen der Streife.'); toast('Applaus vom ganzen Block.', 'good'); } }, { label: 'Lieber nicht', esc: 1, fn: () => toast('„Feigling!“, ruft einer. Ein anderer nickt verständnisvoll.') }] }),
+  () => ({ tag: 'Kiez', title: 'Fahrradkurier mit Platten', text: '„Alter, mein Schlauch ist durch und ich hab noch sieben Bestellungen. Haste Werkzeug?“', opts: [{ label: 'Werkzeugkoffer geben', sub: G.kit ? 'einen Koffer weniger, dafür 30 €' : 'Du hast keinen dabei', dis: !G.kit, fn: () => { G.kit--; earn(30, 'Der Kurier zahlt aus der Trinkgeldkasse:'); } }, { label: 'Viel Glück', esc: 1, fn: () => { } }] }),
+  () => ({ tag: 'Kiez', title: 'Hochzeitskorso', text: 'Zehn Autos, alle hupen, aus einem Fenster winkt die Braut mit einer Flagge. Sie wollen, dass du mitfährst.', opts: [{ label: 'Mithupen', sub: '+Respekt, kostet 5 Minuten', fn: () => { G.clock += 5; sfx('horn'); addXp(20); toast('Der Bräutigam steckt dir ein Stück Torte durchs Fenster.', 'good'); } }, { label: 'Überholen', sub: 'schneller, aber nicht vor der Streife', fn: () => { if (G.seen) offence(.7, 'Überholmanöver im Hochzeitskorso.'); else toast('Vorbei. Die Braut zeigt dir einen Vogel.'); } }] }),
+  () => ({ tag: 'Kiez', title: 'Wahrsagerin am Kollwitzplatz', text: '„Zehn Euro, und ich sag dir, wie deine Nacht wird. Die Karten lügen nie. Fast nie.“', opts: [{ label: 'Karten legen', sub: '10 €', dis: G.money < 10, fn: () => { pay(10, 'shop'); const r = Math.random(); if (r < .35) { G.dmg = Math.max(0, G.dmg - 15); toast('„Dein Wagen wird heute halten.“ Irgendwie läuft er wirklich runder.', 'good'); } else if (r < .7) { G.karma = 1; toast('„Ein Fremder wird großzügig sein.“' + (taxiOff() ? '' : ' Der nächste Fahrgast zahlt doppelt Trinkgeld.'), 'good'); } else toast('„Hüte dich vor Blau.“ Mehr sagt sie nicht.'); } }, { label: 'Ich glaub nur an Navi', esc: 1, fn: () => { } }] }),
+  () => ({ tag: 'Kiez', title: 'Graffiti-Crew', text: '„Steh mal zehn Minuten Schmiere, ja? Wenn Blaulicht kommt: zweimal hupen. Sechzig für dich.“', opts: [{ label: 'Schmiere stehen', sub: '+60 €, 10 Minuten · manchmal kommt wirklich Blaulicht', fn: () => { G.clock += 10; if (Math.random() < .3) { addHeat(1, 'Die Crew rennt, und du stehst noch da.'); } else earn(60, 'Fertig, sieht krass aus:'); } }, { label: 'Nee', esc: 1, fn: () => { } }] }),
+  () => ({ tag: 'Kiez', title: 'Katze auf dem Autodach', text: 'Eine dicke Katze hat sich auf dein Dach gelegt. Sie schnurrt. Sie geht nirgendwohin.', opts: [{ label: 'Warten, bis sie geht', sub: 'kostet 5 Minuten, Karma', fn: () => { G.clock += 5; G.karma = 1; toast('Nach fünf Minuten springt sie runter. Du fühlst dich auserwählt.', 'good'); } }, { label: 'Ganz langsam losfahren', esc: 1, fn: () => toast('Sie rutscht elegant auf die Motorhaube, dann auf den Gehweg. Beleidigt.') }] }),
+  () => ({ tag: 'Kiez', title: 'Schachspieler unter der Laterne', text: '„Eine Partie Blitz. Zwanzig Euro. Ich spiel seit 1974 an dieser Ecke.“', opts: [{ label: 'Spielen', sub: '20 € Einsatz, Gewinn 50 €', dis: G.money < 20, fn: () => { pay(20, 'shop'); if (Math.random() < .35) earn(50, 'Schachmatt in 23 Zügen. Er ist fassungslos:'); else toast('Matt in neun. „Komm wieder, wenn du ’n Läufer von ’nem Turm unterscheiden kannst.“', 'bad'); } }, { label: 'Kein Kopf dafür', esc: 1, fn: () => { } }] }),
+  () => ({ tag: 'Kiez', title: 'Stromausfall im Hinterhof', text: 'Der ganze Block ist dunkel. Im Hof sucht jemand mit dem Handy nach dem Sicherungskasten.', opts: [{ label: 'Scheinwerfer reinhalten', sub: '5 Minuten, Karma und ein Dankeschön', fn: () => { G.clock += 5; G.karma = 1; earn(15, 'Licht ist wieder da. Der Hausmeister zahlt:'); } }, { label: 'Weiter', esc: 1, fn: () => { } }] }),
+  () => ({ tag: 'Kiez', title: 'Influencerin mit Ringlicht', text: '„Kannst du einmal quer über die Kreuzung driften? Für meinen Kanal? Ich zahl auch.“', opts: [{ label: 'Für die Kamera driften', sub: '+25 €, +Respekt · aber nicht vor der Streife', fn: () => { earn(25); addXp(20); sfx('good'); if (G.seen) offence(.7, 'Driften vor laufender Kamera und vor der Streife.'); else toast('Zwei Millionen Aufrufe, sagt sie. Mindestens.', 'good'); } }, { label: 'Ich bin kamerascheu', esc: 1, fn: () => { } }] }),
+  () => ({ tag: 'Kiez', title: 'Mann mit Weihnachtsbaum', text: 'Es ist nicht mal Dezember. Er trägt eine Nordmanntanne und schwitzt. „Nur bis zur Ecke. Bitte.“', opts: [{ label: 'Baum aufs Dach', sub: '+20 €, 5 Minuten', fn: () => { G.clock += 5; earn(20, 'Er ist überglücklich:'); } }, { label: 'Kein Platz', esc: 1, fn: () => { } }] }),
+  () => ({ tag: 'Kiez', title: 'Opa mit Lottoschein', text: '„Ich hab sechs Richtige. Glaub ich. Fahr mich zur Annahmestelle, bevor ich’s mir anders überleg!“', opts: [{ label: 'Hinfahren', sub: '10 Minuten · wer weiß', fn: () => { G.clock += 10; if (Math.random() < .2) earn(150, 'Es waren wirklich sechs! Er teilt:'); else toast('Es waren zwei Richtige. Er schenkt dir den Schein. Als Erinnerung.'); } }, { label: 'Viel Glück, Opa', esc: 1, fn: () => { } }] }),
 ];
 function newEvent() {
   for (let k = 0; k < 20; k++) { const spot = randomSpot(), d = hyp(spot.x - PL.x, spot.y - PL.y); if (d < 180 || d > 800 || MK.some(m => hyp(m.x - spot.x, m.y - spot.y) < 40)) continue; mkMarker('event', spot, null, 4.4).ev = pick(EVENTS); return; }
@@ -3525,6 +3638,7 @@ function dlgEvent(m) { const e = m.ev(); rmMarker(m); e.kind = 'kiez'; dialog(e)
 
 /* ---------- police ---------- */
 function addHeat(n, why) {
+  if (G.race) return;                                  // during a race the police leave you alone
   if (G.t < G.heatCd) return; G.heatCd = G.t + 2.5;
   const was = G.heat; G.heat = Math.min(5, G.heat + n); G.escape = 0; G.chaseMax = Math.max(G.chaseMax, G.heat);
   toast((why || 'Fahndung!') + (was === 0 ? ' Die Bullen suchen dich.' : ''), 'cop'); sfx('heat');
@@ -3538,7 +3652,7 @@ function copSees(c) {
 }
 /* something stupid done in plain view: one slip is a warning, the next one starts the chase */
 function offence(v, why) {
-  if (G.heat > 0 || !G.seen) return false;
+  if (G.race || G.heat > 0 || !G.seen) return false;
   G.att += v;
   if (G.att >= 1) { G.att = 0; addHeat(1, why); }
   else if (G.t > G.warnCd) { G.warnCd = G.t + 5; toast('Die Streife hat das gesehen. Noch so ein Ding und sie sind hinter dir her.', 'cop'); }
@@ -3546,13 +3660,15 @@ function offence(v, why) {
 }
 /* traffic offences: the fine is paid where it happens; from the fourth one in a night the police know your number plate */
 function addPts(n, why) {
+  if (G.race) return;
   G.offs = (G.offs || 0) + 1; if (G.admin) return;
   if (G.offs >= 4 && why !== 'Bankraub' && why !== 'Verkehrskontrolle') addHeat(1, why + ': Die Polizei kennt dein Kennzeichen inzwischen.');
   else if (G.offs === 3 && why !== 'Bankraub' && why !== 'Verkehrskontrolle') toast(why + '. Noch ein Verstoß heute Nacht, dann sucht dich die Polizei.', 'bad');
   else toast(why + '.', 'bad');
 }
 function updPolice(dt) {
-  if ((G.admin && !ADM.cops) || (G.tutor && G.tutS < 6)) { for (const c of COPS) if (c.on) c.kill(); G.heat = 0; G.att = 0; G.seen = false; return; }      // no police before Kalle has explained them
+  if ((G.admin && !ADM.cops) || (G.tutor && G.tutS < 6) || G.race) { for (const c of COPS) if (c.on) c.kill();      // no police during a race either
+    G.heat = 0; G.att = 0; G.seen = false; return; }      // no police before Kalle has explained them
   let active = 0, nearChase = 1e9;
   for (const c of COPS) {
     if (!c.on) continue; active++;
@@ -3582,7 +3698,7 @@ function updPolice(dt) {
     G.redCd = G.t + 4;
     if (lightState(n, Math.abs(Math.cos(PL.a)) > Math.abs(Math.sin(PL.a)) ? 0 : 1, G.t) !== 2) break;
     if (offence(.7, 'Bei Rot drüber, direkt vor der Streife.')) break;
-    if (Math.random() < .2 && G.up.radar < 2) { $('flash').classList.remove('go'); void $('flash').offsetWidth; $('flash').classList.add('go'); sfx('blitz'); fine(35); addPts(1, 'geblitzt bei Rot'); }      // with the reflective plate the red-light cameras simply never fire
+    if (Math.random() < .2 && G.up.radar < 2 && !G.race) { $('flash').classList.remove('go'); void $('flash').offsetWidth; $('flash').classList.add('go'); sfx('blitz'); fine(35); addPts(1, 'geblitzt bei Rot'); }      // with the reflective plate the red-light cameras simply never fire
     break;
   }
 }
@@ -3633,7 +3749,7 @@ function crash(imp) {
   rumble(clamp(imp / 28, .12, .7), clamp(imp / 18, .25, 1), 80 + imp * 7);
   // walls, traffic, trams, Uber, Inkasso: only a scratch (at most 2.5 % per hit); the police are handled in copHit
   G.cleanMin = 0;
-  if (G.t >= G.dmgCd) { G.dmgCd = G.t + .4; G.dmg = Math.min(100, G.dmg + Math.min(2.5, (imp - 4.5) * .14) * G.cs.armor); if (G.fare) G.fare.hits++; }
+  if (G.t >= G.dmgCd) { G.dmgCd = G.t + .4; G.dmg = Math.min(100, G.dmg + Math.min(2.5, (imp - 4.5) * .14) * G.cs.armor); if (G.fare) G.fare.hits++; if (G.race && G.race.go) G.race.hits = (G.race.hits || 0) + 1; }
   if (G.admin && ADM.god) G.dmg = 0;
   CAM.shake = Math.min(1, CAM.shake + imp / 16); sfx('crash', clamp(imp / 14, .25, 1));
   sparks(PL.x + Math.cos(PL.a) * 2, PL.y + Math.sin(PL.a) * 2, 5 + imp | 0);
@@ -3765,6 +3881,7 @@ class Rival extends Car {
   }
 }
 function updRival(dt) {
+  if (taxiOff()) { if (RIV.on) { RIV.on = false; RIV.g.visible = false; } return 0; }
   if (!RIV.on) { G.rivT -= dt; if (G.rivT <= 0) { RIV.spawn(); RIV.gone = 0; if (RIV.on) sms('Zentrale', G.rivN ? 'Schon wieder ein Uber im Kiez. Anderer Fahrer, gleiches grünes Schild.' : 'Achtung, ein Uber-Fahrer wildert im Kiez. Schwarzer Wagen, grünes Schild. Der klaut uns die Kundschaft.'); else G.rivT = 3; } return; }
   RIV.update(dt);
   /* a rammed Uber has had enough: it clears off and only counts once. The next one turns up later, somewhere else */
@@ -3794,7 +3911,7 @@ function updBlitz() {
     if (G.up.radar && G.up.radar < 3) { if (d < 95 && !b.warned && ps > 15) { b.warned = true; sfx('radar'); toast('Blitzerabwehr: Blitzer voraus.', 'cop'); } if (d > 150) b.warned = false; }
     if (d > 30 || G.t < b.cd) continue;
     const s = b.s, u = (PL.x - s.ax) * s.dx + (PL.y - s.ay) * s.dy, lat = Math.abs((PL.x - s.ax) * s.dy - (PL.y - s.ay) * s.dx);
-    if (Math.abs(u - b.t) < 3.5 && lat < s.st.w + 2 && ps > 19.5 && G.up.radar < 3) {      // top level: no camera fires at you at all
+    if (Math.abs(u - b.t) < 3.5 && lat < s.st.w + 2 && ps > 19.5 && G.up.radar < 3 && !G.race) {      // top level: no camera fires at you at all
       b.cd = G.t + 6; G.stats.blitz++; $('flash').classList.remove('go'); void $('flash').offsetWidth; $('flash').classList.add('go'); sfx('blitz');
       fine(30); addPts(1, 'geblitzt mit ' + Math.round(ps * 3.6) + ' km/h');
     }
@@ -3824,12 +3941,12 @@ function updBlocks(dt) {
   if (G.heat >= 3 && G.t > G.rbT && RB.length < 2) { G.rbT = G.t + 24; spawnBlock(); }
   let imp = 0; const ph = (G.t * 4 | 0) & 1;
   for (const b of RB.slice()) {
-    if (G.t > b.until || G.heat === 0 || hyp(b.x - PL.x, b.y - PL.y) > 420) { clearBlock(b); continue; }
+    if (G.t > b.until || (!b.crew && G.heat === 0) || (b.crew && !G.race) || hyp(b.x - PL.x, b.y - PL.y) > 420) { clearBlock(b); continue; }
     for (const c of b.cars) {
-      if (c.gone) continue; c.bar.material = ph ? M_BLUE : M_BLUEOFF;
+      if (c.gone) continue; if (c.bar) c.bar.material = ph ? M_BLUE : M_BLUEOFF;
       if (Math.abs(c.x - PL.x) > 7 || Math.abs(c.y - PL.y) > 7) continue;
       const cx = Math.cos(c.a) * 1.15, cy = Math.sin(c.a) * 1.15, tom = G.turbo > 0 ? 1.4 : 0, i = Math.max(PL.pushOut(c.x + cx, c.y + cy, 1.05, 0, 0, tom), PL.pushOut(c.x - cx, c.y - cy, 1.05, 0, 0, tom));
-      if (i > 0) { imp = Math.max(imp, i); copHit(i, 'rb', 1.4); if (i * PL.mass > 9) { c.gone = true; c.m.visible = false; sparks(c.x, c.y, 20); say(c.x, c.y, 'Der ist durch!'); if (!tom) { PL.vx *= .7; PL.vy *= .7; } } }
+      if (i > 0) { imp = Math.max(imp, i); if (!b.crew) copHit(i, 'rb', 1.4); if (i * PL.mass > 9) { c.gone = true; c.m.visible = false; sparks(c.x, c.y, 20); say(c.x, c.y, 'Der ist durch!'); if (!tom) { PL.vx *= .7; PL.vy *= .7; } } }
     }
   }
   return imp;
@@ -3896,7 +4013,7 @@ const GOALPOOL = [
   { id: 'tips', t: '30 € Trinkgeld kassieren', n: 30, v: () => Math.floor(G.stats.tips), pay: 60 },
 ];
 function pickGoals() {
-  const pool = GOALPOOL.slice(); G.goals = [];
+  const pool = GOALPOOL.filter(g => !(taxiOff() && (g.id === 'fares' || g.id === 'tips' || g.id === 'ram'))); G.goals = [];
   if (P && !G.tutor && unl('ziele')) /* shift goals from the second night on */ for (let i = 0; i < 3; i++) G.goals.push({ g: pool.splice(Math.random() * pool.length | 0, 1)[0], done: false });
   renderGoals();
 }
@@ -3924,6 +4041,7 @@ function renderAdmin() {
   for (const b of document.querySelectorAll('#admin [data-t]')) b.classList.toggle('on', !!ADM[b.dataset.t]);
   for (const b of document.querySelectorAll('#admin [data-a^="heat"]')) b.classList.toggle('on', +b.dataset.a.slice(4) === G.heat);
 }
+function adminWish(i) { G.wishI = i; adminAct('wish1'); }
 function adminAct(a) {
   sfx('click');
   if (a === 'tog') ADM.open = !ADM.open;
@@ -3932,11 +4050,32 @@ function adminAct(a) {
   else if (a === 'turbo') { ADM.turbo = !ADM.turbo; if (!ADM.turbo) G.turbo = 0; }
   else if (a === 'mate') { G.mate = G.mateMax; toast(G.mate + ' Mate im Getränkehalter.'); }
   else if (a === 'kit') { G.kit = G.kitMax; toast(G.kit + ' Werkzeugkoffer im Kofferraum.'); }
-  else if (a === 'race') { const m = newChallenge(); if (m) { G.gpsPick = m; G.routeT = 0; toast('Jemand will ein Rennen: ' + m.ref.who + '. Navi ist gesetzt.'); } else toast(RACERS.every(R => G.raced[R.who]) ? 'Heute Nacht bist du schon gegen alle gefahren.' : 'Gerade kein Platz für ein Rennen. Versuch es gleich noch mal.'); }
+  else if (a === 'race') {                                      // every race in the game, started right where you stand
+    const L = SPECIAL.map(sp => ({ label: 'Story: ' + sp.who, sub: (sp.trait ? { wendig: 'wendig', block: 'blockt', kurve: 'schnell in Kurven', ramm: 'rammt, Straßensperre', speed: 'hohe Endgeschwindigkeit' }[sp.trait] + ' · ' : '') + (sp.boosts || 1) + ' × Turbo', fn: () => adminRace(sp) }))
+      .concat(REMATCH.map(sp => ({ label: 'Revanche: ' + sp.who, sub: RULE[sp.rule] + ' · ' + sp.boosts + ' × Turbo', fn: () => adminRace(sp) })))
+      .concat([{ label: 'Straßenrennen, kleiner Einsatz', sub: '1 × Turbo', fn: () => adminRace(null, 1) }, { label: 'Straßenrennen, hoher Einsatz', sub: '2 × Turbo, härter', fn: () => adminRace(null, 3) }, { label: 'Abbrechen', esc: 1, fn: () => { } }]);
+    dialog({ kind: 'race', tag: 'Admin', title: 'Rennen wählen', text: 'Startet sofort, hier an Ort und Stelle.', opts: L });
+  }
+  else if (a === 'tunedown' || a === 'tune0') { const l = GAR.lv[GAR.cur]; for (const k of ['motor', 'fahrwerk', 'panzer']) l[k] = a === 'tune0' ? 0 : Math.max(0, l[k] - 1); applyCar(); saveGame(); toast('Tuning ' + CARS[GAR.cur].n + ': Motor ' + l.motor + ', Fahrwerk ' + l.fahrwerk + ', Panzerung ' + l.panzer + '.'); }
+  else if (a === 'admreset') { const g = newGarage(); for (const k of CAR_ORDER) g.owned[k] = true; g.cur = GAR.cur; g.funk = 2; g.blitz = 3; g.cup = g.tool = 3; g.radio = { bunker: 1, schlager: 1, dj: 1 }; P.g = GAR = g; applyCar(); buildPlayerCar(); saveGame(); toast('Admin-Garage zurückgesetzt: alle Autos, kein Tuning, Extras voll.'); }
+  else if (a === 'nogrip') { G.grip2 = 0; toast('Winter- und Rennreifen-Bonus entfernt.'); }
   else if (a === 'night') { endShift('frueh'); return; }
   else if (a === 'garage') { if (G.mode !== 'play') return; GAR_UI.tab = 'haus'; openGarage({ name: 'Admin · du bleibst, wo du bist' }, 'shift'); return; }      // straight into the garage; closing it puts you back on the same spot
   else if (a === 'god') ADM.god = !ADM.god;
   else if (a === 'tele') { ADM.tele = true; renderAdmin(); toggleMap(); toast('Klick auf die Karte, um dorthin zu springen.'); return; }
+  else if (a === 'ev') {                                        // pick any Kiez event; it stands as a marker right in front of you
+    const put = i => { const sp = spotNear(PL.x + Math.cos(PL.a) * 25, PL.y + Math.sin(PL.a) * 25); mkMarker('event', sp, null, 4.4).ev = EVENTS[i]; toast('Kiez-Ereignis: ' + EVENTS[i]().title + ' · steht direkt vor dir.'); };
+    dialog({ kind: 'kiez', tag: 'Admin', title: 'Kiez-Ereignis wählen', text: EVENTS.length + ' Ereignisse. Es steht gleich vor dir.', opts: EVENTS.map((e, i) => ({ label: e().title, fn: () => put(i) })).concat([{ label: 'Abbrechen', esc: 1, fn: () => { } }]) });
+  }
+  else if (a === 'wish') {                                      // pick a wish; a passenger with it stands right next to you
+    const WN = { eilig: 'Eilig, schnell am Ziel', meiden: 'Eine Straße meiden', stopp: 'Stopp an einer grünen Säule', ruhe: 'Radio aus', kratzer: 'Keine Kratzer', turbo: 'Turbo-Mate trinken', sender: 'Lieblingssender', klo: 'Muss aufs Klo', tail: 'Verfolger abhängen' };
+    dialog({ kind: 'taxi', tag: 'Admin', title: 'Taxi-Wunsch wählen', text: 'Der Fahrgast steht gleich neben dir.', opts: WISHES.map((k, i) => ({ label: WN[k] || k, fn: () => adminWish(i) })).concat([{ label: 'Abbrechen', esc: 1, fn: () => { } }]) });
+  }
+  else if (a === 'wish1') {
+    const i = G.wishI; 
+    const n = G.hails.length; for (let k = 0; k < 8 && G.hails.length === n; k++) newHail(10, 90); if (G.hails.length > n) G.hails[G.hails.length - 1].fw = WISHES[i];
+    toast(G.hails.length > n ? 'Taxi-Wunsch ' + (i + 1) + '/' + WISHES.length + ': „' + WISHES[i] + '“ · Fahrgast steht gleich neben dir.' : 'Hier ist kein Platz für einen Fahrgast.');
+  }
   else if (a === 'vip') { G.vipSoon = true; const n = G.hails.length; for (let i = 0; i < 8 && G.hails.length === n; i++) newHail(10, 90); G.vipSoon = false; toast(G.hails.length > n ? 'Ein VIP wartet gleich neben dir.' : 'Hier ist kein Platz für einen Fahrgast. Fahr ein Stück weiter.'); }
   else if (a === 'fav') { if (G.fav) favOff(); favNew(true); }
   else if (a === 'mjob') { if (G.mj) mjOff(); mjOffer(); }
@@ -3962,7 +4101,8 @@ function updJobs(dt) {
   G.nextHail -= dt;
   if (G.hails.length < 4 && G.nextHail <= 0 && !G.hold) { G.nextHail = 2.5; newHail(); }
   for (const h of G.hails.slice()) { h.life -= dt; if (h.life <= 0 || hyp(h.spot.x - PL.x, h.spot.y - PL.y) > 900) dropHail(h); }
-  if (G.fare) G.fare.t += dt;
+  if (G.fare) { G.fare.t += dt; wishTick(G.fare, dt); }
+  if (TAILC && TAILC.on && !(G.fare && G.fare.wish && G.fare.wish.k === 'tail')) { TAILC.leave = true; TAILC.update(dt); }
   // phone orders: never more than three at once. With none in hand the next request comes within seconds, unless you just turned one down.
   if (G.depotSeen && !G.race && !G.heist && (!G.hold || G.tutOffer)) {
     if (G.offer) { G.offer.t -= dt; $('po-bar').style.transform = 'scaleX(' + clamp(G.offer.t / 17, 0, 1) + ')'; if (G.offer.t <= 0) answerOffer(false, true); }
@@ -3985,6 +4125,8 @@ function updJobs(dt) {
 /* what the navi shows: yellow to the fare's destination, blue to the nearest delivery (or the stop to restock on the way), and your own pick */
 function navTargets() {
   let nav = null;
+  if (G.race) { for (const m of MK) if (m.type !== 'fin' && m.type !== 'pin') m.g.visible = false; } else if (G.rHid) for (const m of MK) m.g.visible = !m.off;      // the race clears the street of every other errand
+  G.rHid = !!G.race;
   if (G.gpsPick && (!MK.includes(G.gpsPick) || G.gpsPick.off)) G.gpsPick = null;
   if (G.gpsPick && G.gpsPick.type !== 'hail' && G.gpsPick.type !== 'order' && hyp(G.gpsPick.x - PL.x, G.gpsPick.y - PL.y) < 9) { if (G.gpsPick.type === 'pin') rmMarker(G.gpsPick); G.gpsPick = null; G.routeT = 0; }
   if (G.gpsPick) nav = G.gpsPick;
@@ -4008,7 +4150,10 @@ function calcRoutes() {
     const tg = G.tg[k]; let R = null;
     if (tg) {
       const r = routeBetween(PL.x, PL.y, tg.x, tg.y);
-      R = { pts: r ? [[PL.x, PL.y]].concat(r.pts, [[tg.x, tg.y]]) : [[PL.x, PL.y], [tg.x, tg.y]], d: r ? r.dist : hyp(tg.x - PL.x, tg.y - PL.y), tg, col: G.race ? MKCOL.race : k === 'taxi' ? MKCOL.dest : k === 'snow' ? MKCOL.order : MKCOL[tg.type] };
+      R = { pts: r ? [[PL.x, PL.y]].concat(r.pts, [[tg.x, tg.y]]) : [[PL.x, PL.y], [tg.x, tg.y]], d: r ? r.dist : hyp(tg.x - PL.x, tg.y - PL.y), tg, col: G.race ? 0xffffff : k === 'taxi' ? MKCOL.dest : k === 'snow' ? MKCOL.order : MKCOL[tg.type] };
+      if (k === 'nav' && G.race && G.race.gates && G.race.gi < G.race.gates.length - 1) {          // in a race the line runs on past the gate to the next one, so the turn after it is no surprise
+        const nx = G.race.gates[G.race.gi + 1], r2 = routeBetween(tg.x, tg.y, nx.x, nx.y); R.pts = R.pts.concat(r2 ? r2.pts : [], [[nx.x, nx.y]]);
+      }
     }
     G.rt[k] = R; drawRoute(k, R, both ? (k === 'taxi' ? .85 : k === 'snow' ? -.85 : 0) : 0);
   }
@@ -4101,7 +4246,7 @@ function bigZoom(f, px, py) { if (px === undefined) { px = BIG.w / 2; py = BIG.h
 function bigPan(dx, dy) { BIG.cx -= dx / BIG.k; BIG.cy += dy / BIG.k; bigClamp(); }
 function bigHit(mx, my) {
   let best = null, bd = 20;
-  for (const m of MK) { if (m.off) continue; const q = bigTx(m.x, m.y), d = hyp(q[0] - mx, q[1] - my); if (d < bd) { bd = d; best = m; } }
+  for (const m of MK) { if (mkHid(m)) continue; const q = bigTx(m.x, m.y), d = hyp(q[0] - mx, q[1] - my); if (d < bd) { bd = d; best = m; } }
   return best;
 }
 function forceRoute() { navTargets(); calcRoutes(); G.routeT = .7; }
@@ -4187,8 +4332,8 @@ function drawMapOverlay(g, tx, big) {                // tx(x,y) -> [px,py]
   const act = [G.tg.taxi, G.tg.snow, G.tg.nav];
   if (big) { g.font = '700 13px "Barlow Condensed", "Arial Narrow", sans-serif'; g.textAlign = 'center'; g.textBaseline = 'alphabetic'; g.lineJoin = 'round'; }
   for (const m of MK) {
-    if (m.off) continue;
-    const q = tx(m.x, m.y), s = ((m.type === 'hail' && !(m.ref && m.ref.vip)) || m.type === 'event' ? 3.5 : 5.5) * z; g.fillStyle = m.ref && m.ref.vip ? '#ffffff' : m.ref && m.ref.css ? m.ref.css : MKCSS[m.type]; g.strokeStyle = '#0b0e1a'; g.lineWidth = 2;
+    if (mkHid(m)) continue;
+    const q = tx(m.x, m.y), s = ((m.type === 'hail' && !(m.ref && m.ref.vip)) || m.type === 'event' ? 3.5 : 5.5) * z; g.fillStyle = m.ref && m.ref.vip ? '#ffffff' : m.ref && m.ref.css ? m.ref.css : MKCSS[m.type]; g.strokeStyle = m.type === 'race' || m.type === 'fin' ? '#ffffff' : '#0b0e1a'; g.lineWidth = 2;
     g.beginPath(); if (MKSQ[m.type]) g.rect(q[0] - s, q[1] - s, s * 2, s * 2); else g.arc(q[0], q[1], s, 0, TAU); g.fill(); g.stroke();
     if (big && MKSQ[m.type] && BIG.k > .42) { g.lineWidth = 3; g.strokeText(m.ref.name, q[0], q[1] + s + 14); g.fillText(m.ref.name, q[0], q[1] + s + 14); }
     if (act.includes(m)) { g.strokeStyle = '#fff'; g.lineWidth = 1.5 * z; g.beginPath(); g.arc(q[0], q[1], s + (4 + Math.sin(G.t * 6) * 1.5) * z, 0, TAU); g.stroke(); }
@@ -4199,7 +4344,7 @@ function drawMapOverlay(g, tx, big) {                // tx(x,y) -> [px,py]
   revOverlay(g, tx, big, z);
   if (RIV.on) { const q = tx(RIV.x, RIV.y); g.fillStyle = '#16181f'; g.strokeStyle = '#3dffa0'; g.lineWidth = 2; g.beginPath(); g.arc(q[0], q[1], 4.5 * z, 0, TAU); g.fill(); g.stroke(); }
   if (G.race && G.race.opp.on) { const q = tx(G.race.opp.x, G.race.opp.y); g.fillStyle = '#ff5a3c'; g.strokeStyle = '#fff'; g.lineWidth = 2; g.beginPath(); g.arc(q[0], q[1], 5 * z, 0, TAU); g.fill(); g.stroke(); }
-  if (G.up.radar) for (const b of BLITZ) { const q = tx(b.x, b.y); g.fillStyle = '#ff5a4d'; g.beginPath(); g.moveTo(q[0], q[1] - 5 * z); g.lineTo(q[0] + 4.5 * z, q[1] + 3.5 * z); g.lineTo(q[0] - 4.5 * z, q[1] + 3.5 * z); g.closePath(); g.fill(); }
+  if (G.up.radar && G.up.radar < 3) for (const b of BLITZ) { const q = tx(b.x, b.y); g.fillStyle = '#ff5a4d'; g.beginPath(); g.moveTo(q[0], q[1] - 5 * z); g.lineTo(q[0] + 4.5 * z, q[1] + 3.5 * z); g.lineTo(q[0] - 4.5 * z, q[1] + 3.5 * z); g.closePath(); g.fill(); }
   const q = tx(PL.x, PL.y); g.save(); g.translate(q[0], q[1]); g.rotate(-PL.a); g.scale(z * 1.15, z * 1.15); g.fillStyle = '#ebe2bd'; g.strokeStyle = '#0b0e1a'; g.lineWidth = 1.5;
   g.beginPath(); g.moveTo(8, 0); g.lineTo(-6, 5.5); g.lineTo(-3, 0); g.lineTo(-6, -5.5); g.closePath(); g.fill(); g.stroke(); g.restore();
 }
@@ -4256,8 +4401,8 @@ function drawMini() {
   g.restore();
   const act = [G.tg.taxi, G.tg.snow, G.tg.nav];
   for (const m of MK) {
-    if (m.off) continue;
-    const on = act.includes(m), q = tx(m.x, m.y, on); if (!q) continue; const vip = m.ref && m.ref.vip, sz = (m.type === 'hail' && !vip) || m.type === 'event' ? 7 : 9; g.fillStyle = vip ? '#ffffff' : m.ref && m.ref.css ? m.ref.css : MKCSS[m.type]; g.lineWidth = 2; g.strokeStyle = '#0b0e1a';
+    if (mkHid(m)) continue;
+    const on = act.includes(m), q = tx(m.x, m.y, on); if (!q) continue; const vip = m.ref && m.ref.vip, sz = (m.type === 'hail' && !vip) || m.type === 'event' ? 7 : 9; g.fillStyle = vip ? '#ffffff' : m.ref && m.ref.css ? m.ref.css : MKCSS[m.type]; g.lineWidth = 2; g.strokeStyle = m.type === 'race' || m.type === 'fin' ? '#ffffff' : '#0b0e1a';
     g.beginPath(); if (MKSQ[m.type]) g.rect(q[0] - sz, q[1] - sz, sz * 2, sz * 2); else g.arc(q[0], q[1], sz, 0, TAU); g.fill(); g.stroke();
     if (on) { g.strokeStyle = '#fff'; g.lineWidth = 3; g.beginPath(); g.arc(q[0], q[1], sz + 7 + Math.sin(G.t * 6) * 3, 0, TAU); g.stroke(); }
   }
@@ -4270,7 +4415,7 @@ function drawMini() {
   for (const g2 of GOONS) if (g2.on) { const q = tx(g2.x, g2.y, true); if (q) { g2l(g, q, 9); } }
   if (RIV.on) { const q = tx(RIV.x, RIV.y, false); if (q) { g.fillStyle = '#16181f'; g.strokeStyle = '#3dffa0'; g.lineWidth = 3; g.beginPath(); g.arc(q[0], q[1], 9, 0, TAU); g.fill(); g.stroke(); } }
   if (G.race && G.race.opp.on) { const q = tx(G.race.opp.x, G.race.opp.y, true); if (q) { g.fillStyle = '#ff5a3c'; g.strokeStyle = '#fff'; g.lineWidth = 3; g.beginPath(); g.arc(q[0], q[1], 9, 0, TAU); g.fill(); g.stroke(); } }
-  if (G.up.radar) for (const b of BLITZ) { const q = tx(b.x, b.y, false); if (!q) continue; g.fillStyle = '#ff5a4d'; g.beginPath(); g.moveTo(q[0], q[1] - 10); g.lineTo(q[0] + 9, q[1] + 7); g.lineTo(q[0] - 9, q[1] + 7); g.closePath(); g.fill(); }
+  if (G.up.radar && G.up.radar < 3) for (const b of BLITZ) { const q = tx(b.x, b.y, false); if (!q) continue; g.fillStyle = '#ff5a4d'; g.beginPath(); g.moveTo(q[0], q[1] - 10); g.lineTo(q[0] + 9, q[1] + 7); g.lineTo(q[0] - 9, q[1] + 7); g.closePath(); g.fill(); }
   g.save(); g.translate(c, c); g.rotate(rot - PL.a); g.fillStyle = '#ebe2bd'; g.strokeStyle = '#0b0e1a'; g.lineWidth = 3;
   g.beginPath(); g.moveTo(18, 0); g.lineTo(-12, 11); g.lineTo(-6, 0); g.lineTo(-12, -11); g.closePath(); g.fill(); g.stroke(); g.restore();
   const na = rot - Math.PI / 2; g.fillStyle = '#ebe2bd'; g.font = '700 24px "Barlow Condensed", sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('N', c + Math.cos(na) * (c - 17), c + Math.sin(na) * (c - 17));
@@ -4318,7 +4463,7 @@ function hud() {
   $('dmg').style.transform = 'scaleX(' + (1 - G.dmg / 100) + ')'; $('dmg').className = G.dmg > 70 ? 'crit' : '';
   const w = (G.seenMk || (G.att > .03 && !G.civOnly)) && G.heat === 0; if (G.seenMk) G.civOnly = false; else if (G.seen) G.civOnly = true; $('watch').hidden = !w; if (w) { $('att').style.transform = 'scaleX(' + clamp(G.att, 0, 1) + ')'; $('att').className = G.att > .5 ? 'crit' : ''; }
   // standing in a marker you already used: offer the action key to open it again
-  let again = null; if (PL.speed() < 2.5 && !G.race) for (const m of MK) if (m.cool && !m.off && m.type !== 'pin' && m.type !== 'fin' && hyp(m.x - PL.x, m.y - PL.y) <= m.r) { again = m; break; }
+  let again = null; if (PL.speed() < 2.5 && !G.race && G.mode === 'play') for (const m of MK) if (m.cool && !m.off && m.type !== 'pin' && m.type !== 'fin' && hyp(m.x - PL.x, m.y - PL.y) <= m.r) { again = m; break; }
   $('prompt').hidden = !again; if (again) setT($('prompt-t'), mkLabel(again) + ' nochmal öffnen');
   pipsHud($('mate-c'), G.mate, G.mateMax); pipsHud($('kit-c'), G.kit, G.kitMax); $('kit').hidden = G.kit <= 0; $('mate').hidden = G.mate <= 0 && G.turbo <= 0;      // only what you carry
   const gl = $('goals').children.length > 0; $('goals').hidden = !gl; $('status').querySelector('.gl').hidden = !gl;
@@ -4331,7 +4476,7 @@ function hud() {
   const fresh = KZ.signT > G.t; setT($('street'), fresh ? KZ.sign : nm); $('sign').classList.toggle('new', fresh); careerHud(); revHud();      // a street driven for the first time shows on the sign for a moment
   // job panel: one row for the fare (yellow), one for the nearest delivery (blue), one for your own navi target
   const f = G.race ? null : G.fare, o = G.race ? null : G.actOrd, rt = G.rt, nv = G.tg.nav;
-  jobRow('job-taxi', f ? f.p.n + ' → ' + f.dname : '', f ? 'Noch ' + m10(rt.taxi && rt.taxi.d) : '', f ? clamp(1 - f.t / (f.par * 1.5), 0, 1) : -1);
+  jobRow('job-taxi', f ? f.p.n + ' → ' + f.dname : '', f ? 'Noch ' + m10(rt.taxi && rt.taxi.d) + (f.wish ? ' · ' + wishLine(f) : '') : '', f ? (f.wish && f.wish.lim && !f.wish.lost ? clamp(1 - f.t / f.wish.lim, 0, 1) : clamp(1 - f.t / (f.par * 1.5), 0, 1)) : -1);
   if (o) {
     const t = Math.max(0, Math.ceil(o.t)), lack = G.stock < o.qty;
     jobRow('job-snow', (G.viaSrc ? 'Erst Ware holen: ' + G.viaSrc.name + ' · dann ' : 'Lieferung: ') + o.spot.name + ' · ' + o.qty + ' ×',
@@ -4376,7 +4521,10 @@ function updChase(dt) {
   // a wall between the car and the camera: the camera moves in front of it instead of ending up inside the house
   const want = R * ce, hit = camRay(PL.x, PL.y, -cx, -cy, want + .8), d = hit < want + .8 ? Math.max(2.2, hit - .9) : want;
   CAM.cd = d < (CAM.cd || want) ? d : (CAM.cd || want) + (d - (CAM.cd || want)) * Math.min(1, dt * 3);
-  camera.position.set(PL.x - cx * CAM.cd + sx, 1.4 + R * Math.sin(el) + sy, -(PL.y - cy * CAM.cd));
+  // under the U2 viaduct the camera stays below the deck, else the deck hides your own car
+  let top = 99; if (W.via) { const qx = PL.x - cx * CAM.cd, qy = PL.y - cy * CAM.cd; for (const [x, y] of [[PL.x, PL.y], [qx, qy]]) { const pr = W.via.project(x, y), vh = W.viaH(pr.s); if (pr.d < 6.5 && vh > 3.8) top = Math.min(top, vh - 1.8); } }
+  CAM.top = (CAM.top || 99) + (top - (CAM.top || 99)) * Math.min(1, dt * (top < (CAM.top || 99) ? 8 : 2));
+  camera.position.set(PL.x - cx * CAM.cd + sx, Math.min(1.4 + R * Math.sin(el), CAM.top) + sy, -(PL.y - cy * CAM.cd));
   camera.lookAt(PL.x + cx * 7, 1.3, -(PL.y + cy * 7));
   moonAt(PL.x + cx * 50, PL.y + cy * 50);
 }
@@ -4429,14 +4577,14 @@ function stepWorld(dt, driving) {
   if (G.race && G.race.opp.on) OBST.push({ x: G.race.opp.x, y: G.race.opp.y, r: 1.5, ref: G.race.opp });
   for (const b of RB) for (const c of b.cars) if (!c.gone) OBST.push({ x: c.x, y: c.y, r: 2.4, ref: b });
   for (const t of TRAF) if (t.on) OBST.push({ x: t.x, y: t.y, r: 1.4, ref: t, traf: !t.fly });
-  for (const tr of TRAINS) if (tr.kind === 'tram') for (const p of tr.pos) OBST.push({ x: p.x, y: p.y, r: 3.6, ref: tr });
+  if (!G.race) for (const tr of TRAINS) if (tr.kind === 'tram') for (const p of tr.pos) OBST.push({ x: p.x, y: p.y, r: 3.6, ref: tr });
   for (const t of TRAF) { if (!t.on) continue; t.update(dt); if (hyp(t.x - PL.x, t.y - PL.y) > 410) t.kill(); }
   G.trT -= dt; if (G.trT <= 0) { G.trT = .2; spawnTraffic(); }
   for (const p of PEDS) { if (!p.on) continue; p.update(dt); if (hyp(p.x - PL.x, p.y - PL.y) > 235) p.kill(); }
   for (const p of HPED) p.update(dt);
   G.pdT -= dt; if (G.pdT <= 0) { G.pdT = .15; spawnPed(); }
   for (const c of COPS) c.update(dt);
-  for (const tr of TRAINS) tr.update(dt);
+  for (const tr of TRAINS) { const hide = G.race && tr.kind === 'tram'; if (hide !== !!tr.hid) { tr.hid = hide; for (const g of tr.cars) g.visible = !hide; } if (!hide) tr.update(dt); }      // trams leave the streets during a race
   updateLights(G.t); updSparks(dt); if (typeof updCity === 'function') updCity(dt);
   for (const a of ALARM) a.m.visible = a.until > G.t && ((G.t * 5 | 0) & 1) === 1;
   for (const b of BUB) if (b.t > 0) { b.t -= dt; if (b.t <= 0) b.el.style.display = 'none'; }
@@ -4469,7 +4617,7 @@ function simulate(dt) {
       if (Math.random() < .4) say(t.x, t.y, pick(['Bist du irre?!', 'Meine Karre!', 'Ey!!', 'Polizei!!', 'Hast du Tomaten auf den Augen?']));
     } else { imp = Math.max(imp, i); if (i > 1.2 && t.stun <= 0) { t.stun = 2.6; sfx('horn2'); } }
   }
-  for (const tr of TRAINS) if (tr.kind === 'tram') for (const p of tr.pos) {
+  if (!G.race) for (const tr of TRAINS) if (tr.kind === 'tram') for (const p of tr.pos) {
     if (Math.abs(p.x - PL.x) > 9 || Math.abs(p.y - PL.y) > 9) continue;
     const c = Math.cos(p.a), s = Math.sin(p.a); let i = 0; for (const k of [-3.2, 0, 3.2]) i = Math.max(i, PL.pushOut(p.x + c * k, p.y + s * k, 1.35, c * tr.v, s * tr.v));
     if (i > 0) { imp = Math.max(imp, i); if (G.t > G.bellCd) { G.bellCd = G.t + 2; sfx('bell'); } }
@@ -4525,7 +4673,7 @@ function startSlot() { if (P.tut === 1) { loadP(); openGarage(null, 'intro'); } 
 function startShift(admin) {
   admin = admin === true;
   auInit();
-  if (admin) { P = newProfile(); P.tut = 2; P.night = 12; P.depotSeen = true; P.seen = { kalle: 1 }; const g = P.g; for (const k of CAR_ORDER) g.owned[k] = true; g.cur = 'taxi'; g.funk = 2; g.blitz = 3; g.cup = g.tool = 3; g.radio = { bunker: 1, schlager: 1, dj: 1 }; for (const l of LAGER) P.lager[l.id] = { lv: 3, stock: 40, cash: 0, run: 1 }; }
+  if (admin) { P = newProfile(); P.tut = 2; P.night = 12; P.depotSeen = true; P.seen = { kalle: 1 }; const g = P.g; for (const k of CAR_ORDER) g.owned[k] = true; g.cur = 'taxi'; g.funk = 2; g.blitz = 3; g.cup = g.tool = 3; g.radio = { bunker: 1, schlager: 1, dj: 1 }; for (const l of LAGER) P.lager[l.id] = { lv: 3, stock: 40, cash: 0, run: 1 }; const ag = admGarLoad(); if (ag) { P.g = ag; fixProfile(P); } }
   else if (G.admin || !P) useSlot(SLOT);
   resetGame(); G._dawn = -1; dawn(); G.admin = admin; GAR = P.g;
   G.tutor = !admin && P.tut === 0;
@@ -4540,7 +4688,7 @@ function startShift(admin) {
   fenceReset(); revStart(); guideStart();              // after last night's markers are gone and the car stands where the night begins
   setCam(OPT.cam, true);
   CAM.x = PL.x; CAM.y = PL.y; CAM.yaw = PL.a; PLG.visible = true; place(PLG, PL.x, PL.y, PL.a); PLG.userData.ring.visible = PLG.userData.sil.visible = PLG.userData.cone.visible = true; povVis(); resetPfand(); HELI.on = false; HELI.g.visible = HELI.spot.visible = false;
-  for (const g2 of GOONS) g2.kill(); for (const g2 of ABZL) g2.kill(); $('wet').style.opacity = 0;
+  for (const g2 of GOONS) g2.kill(); for (const g2 of ABZL) g2.kill(); if (TAILC) TAILC.kill(); $('wet').style.opacity = 0;
   RIV.on = false; RIV.g.visible = false; for (const b of RB.slice()) clearBlock(b); pickGoals(); resetSkid(); PL.drift = 0;
   $('title').hidden = true; $('end').hidden = true; $('pause').hidden = true; $('garage').hidden = true; $('hud').hidden = false; $('ph-offer').hidden = true; $('ph-msgs').textContent = ''; $('toasts').textContent = ''; setTask(''); talkClear();
   $('admin').hidden = !admin; $('adm-badge').hidden = !admin;
@@ -4985,7 +5133,9 @@ function readSlot(i) {
 function useSlot(i) { SLOT = i; P = readSlot(i) || newProfile(); GAR = P.g; careerLoad(); try { localStorage.setItem('schneetreiben-slot', String(i)); } catch (e) { } }
 /* everything you carry survives the night: money, goods, Mate, toolkits, debts, reputation */
 function syncP() { if (!P || G.admin) return; for (const k of ['money', 'stock', 'mate', 'kit', 'grip2', 'debt', 'rep', 'depotSeen']) if (G[k] !== undefined) P[k] = G[k]; P.money = Math.max(0, Math.round(P.money * 100) / 100); }
-function saveGame(sync) { if (G.admin || !P) return; if (sync !== false && G.live) syncP(); try { localStorage.setItem(SLOTKEY + SLOT, JSON.stringify(P)); } catch (e) { } }
+const ADMKEY = 'schneetreiben-admin-garage';          /* the admin keeps his own garage, apart from the three careers */
+function admGarLoad() { let g = null; try { g = JSON.parse(localStorage.getItem(ADMKEY) || 'null'); } catch (e) { } return g; }
+function saveGame(sync) { if (G.admin && P) { try { localStorage.setItem(ADMKEY, JSON.stringify(P.g)); } catch (e) { } return; } if (G.admin || !P) return; if (sync !== false && G.live) syncP(); try { localStorage.setItem(SLOTKEY + SLOT, JSON.stringify(P)); } catch (e) { } }
 function saveCareer() { saveGame(); }
 function slotLine(p) {
   if (!p) return 'Leer · neue Karriere';
@@ -5039,7 +5189,7 @@ function carStats(t, lv) {
   return { acc: c.acc * (1 + .1 * l.motor), vmax: c.vmax * (1 + .06 * l.motor), grip: c.grip * (1 + .12 * l.fahrwerk), turn: c.turn * (1 + .06 * l.fahrwerk), armor: c.armor * (1 - .2 * l.panzer), stock: c.stock + 2 * l.fach, hide: l.fach >= 3, att: c.att || 1, de: c.de || 1, pitch: c.pitch || 1, vol: c.vol == null ? 1 : c.vol, mass: c.mass * (1 + .1 * l.panzer), offroad: !!c.offroad, L: SHAPE[t].L };
 }
 function applyCar(paint) {
-  G.cs = carStats(); G.maxStock = G.cs.stock; G.stock = Math.min(G.stock, G.maxStock); G.up.funk = GAR.funk; G.up.radar = GAR.blitz; G.mateMax = 2 + GAR.cup; G.kitMax = 2 + GAR.tool; PL.de = G.cs.de;
+  G.cs = carStats(); G.maxStock = G.cs.stock; G.stock = Math.min(G.stock, G.maxStock); G.up.funk = GAR.funk; G.up.radar = GAR.blitz; G.mateMax = 2 + GAR.cup + (P.sp && P.sp.lars ? 1 : 0); G.kitMax = 2 + GAR.tool; PL.de = G.cs.de;
   PL.mass = G.cs.mass; PL.offroad = G.cs.offroad; PL.cl = clamp(G.cs.L / 2 - 1.05, .85, 1.6); PL.cr = G.cs.L > 5 ? 1.08 : 1.0; buildPlayerCar(paint);
 }
 
@@ -5083,7 +5233,7 @@ function buildPlayerCar(prev) {
   g.add(new THREE.Mesh(hl.build(), M_HEAD));
   const tail = new THREE.Mesh(new MB().box(-hx, S.ly + .04, lz, .08, .2, .44, [1, 1, 1]).box(-hx, S.ly + .04, -lz, .08, .2, .44, [1, 1, 1]).build(), M_TAIL); g.add(tail); g.userData.tail = tail;
   const cone = new THREE.Mesh(coneGeo(), M_CONE); cone.position.x = S.L / 2 - 2.3; cone.renderOrder = 3; g.add(cone);
-  if (t === 'taxi') { const sign = new THREE.Mesh(new THREE.BoxGeometry(.5, .24, 1), new THREE.MeshBasicMaterial({ color: 0xffd21f })); sign.position.set(S.rx + .4, S.rt + .16, 0); g.add(sign); }
+  if (t === 'taxi' && !(typeof taxiOff === 'function' && taxiOff())) { const sign = new THREE.Mesh(new THREE.BoxGeometry(.5, .24, 1), new THREE.MeshBasicMaterial({ color: 0xffd21f })); sign.position.set(S.rx + .4, S.rt + .16, 0); g.add(sign); }
   if (t === 'miles') { const sign = new THREE.Mesh(new THREE.BoxGeometry(.9, .03, 1.1), new THREE.MeshBasicMaterial({ color: 0x1fd6c0 })); sign.position.set(S.rx, S.rt + .065, 0); g.add(sign); for (const sg of [1, -1]) { const d = new THREE.Mesh(new THREE.BoxGeometry(1.3, .2, .03), new THREE.MeshBasicMaterial({ color: 0x1fd6c0 })); d.position.set(-.15, .62, sg * (hw + .012)); g.add(d); } }
   const ring = new THREE.Mesh(RING_GEO, new THREE.MeshBasicMaterial({ color: 0xebe2bd, transparent: true, opacity: .42, depthWrite: false }));      /* depth-tested: the car itself covers the ring */ ring.scale.setScalar(3.3); ring.position.y = .3; ring.renderOrder = 9; g.add(ring);
   // faint outline of the car wherever a house is in the way
@@ -5207,12 +5357,13 @@ function garModel() {
 function garReset() { const U = GAR_UI, had = U.look || U.arm; U.look = null; U.arm = null; return had; }
 function pips(n, max) { let s = '<span class="pips">'; for (let i = 0; i < (max || 3); i++) s += '<i class="' + (i < n ? 'on' : '') + '"></i>'; return s + '</span>'; }
 function upRow(u, lvl, attr) {
-  const mx = u.p.length, max = lvl >= mx, next = max ? null : u.p[lvl], arm = GAR_UI.arm === (attr || 'up') + ':' + u.k, price = G.admin ? 'gratis' : eur0(next);
+  const mx = u.p.length, max = lvl >= mx, next = max ? null : u.p[lvl], arm = GAR_UI.arm === (attr || 'up') + ':' + u.k, price = (G.admin ? 'gratis statt ' : '') + eur0(next);
   return '<div class="g-row' + (arm ? ' arm' : '') + '"><div class="g-rl"><b>' + u.n + '</b>' + pips(lvl, mx) + '<small>' + (max ? u.d[mx - 1] + ' · voll ausgebaut' : (arm ? 'Angesehen: ' : 'Nächste Stufe: ') + u.d[lvl] + (u.e ? ' · ' + u.e : '')) + '</small></div>' +
+    (G.admin && lvl > 0 ? '<button type="button" class="g-down" data-down="' + (attr || 'up') + ':' + u.k + '" title="Admin: eine Stufe zurück">−1</button>' : '') +
     '<button type="button" class="' + (arm ? 'arm' : 'look') + '" data-' + (attr || 'up') + '="' + u.k + '"' + (max ? ' disabled' : '') + '>' + (max ? 'Maximal' : arm ? 'Jetzt kaufen · ' + price : 'Ansehen · Stufe ' + (lvl + 1) + ' · ' + price) + '</button></div>';
 }
 function shopRow(it, attr, own, on, arm, words) {
-  const price = G.admin ? 'gratis' : eur0(it.p), lock = it.quest && !own && !G.admin;
+  const price = (G.admin ? 'gratis statt ' : '') + eur0(it.p), lock = it.quest && !own && !G.admin;
   return '<div class="g-row' + (arm ? ' arm' : '') + '"><div class="g-rl"><b>' + it.n + '</b><small>' + it.d + (on ? ' · ' + words[2] : own ? ' · gehört dir' : '') + '</small></div><button type="button" class="' + (own ? '' : arm ? 'arm' : 'look') + '" data-' + attr + '="' + it.id + '"' + (lock ? ' disabled' : '') + '>' +
     (on ? words[1] : own ? words[0] : lock ? 'Nur für den Paten' : arm ? 'Jetzt kaufen · ' + price : words[3] + ' · ' + price) + '</button></div>';
 }
@@ -5235,22 +5386,22 @@ function renderGarage() {
     if (c.rent) h = '<p class="g-note">Der Mietwagen bleibt, wie er ist.</p>';
     else {
       const pv = U.prev, own = GAR.paints[t], cur = GAR.paint[t], sel = pv == null ? cur : pv, nm = (PAINTS.find(p => p[0] === sel) || [0, 'Sonderlack'])[1], has = own.includes(sel);
-      h = LOOKHINT + upRow(OPTIK, l.optik) + '<div class="lab g-sub">Lackierung · anklicken zum Ansehen · neue Farbe ' + (G.admin ? 'gratis' : eur0(PAINT_PRICE)) + ', bezahlte Farben bleiben für dieses Auto gratis</div><div class="g-sw">' +
+      h = LOOKHINT + upRow(OPTIK, l.optik) + '<div class="lab g-sub">Lackierung · anklicken zum Ansehen · neue Farbe ' + ((G.admin ? 'gratis statt ' : '') + eur0(PAINT_PRICE)) + ', bezahlte Farben bleiben für dieses Auto gratis</div><div class="g-sw">' +
         PAINTS.map((p, i) => '<button type="button" data-paint="' + i + '" title="' + p[1] + '" aria-label="' + p[1] + (own.includes(p[0]) ? ', gekauft' : '') + '" class="' + (sel === p[0] ? 'on ' : '') + (own.includes(p[0]) ? 'own' : '') + '" style="--c:' + hex6(p[0]) + '"></button>').join('') + '</div>' +
-        '<div class="g-row g-paint"><div class="g-rl"><b>' + nm + '</b><small>' + (sel === cur ? 'ist gerade drauf' : has ? 'schon bezahlt, Wechsel gratis' : 'Vorschau, noch nicht gekauft') + '</small></div><button type="button" data-paintbuy="1"' + (sel === cur ? ' disabled' : '') + '>' + (sel === cur ? 'Aktuelle Farbe' : has || G.admin ? 'Umlackieren · gratis' : 'Lackieren · ' + eur0(PAINT_PRICE)) + '</button></div>';
+        '<div class="g-row g-paint"><div class="g-rl"><b>' + nm + '</b><small>' + (sel === cur ? 'ist gerade drauf' : has ? 'schon bezahlt, Wechsel gratis' : 'Vorschau, noch nicht gekauft') + '</small></div><button type="button" data-paintbuy="1"' + (sel === cur ? ' disabled' : '') + '>' + (sel === cur ? 'Aktuelle Farbe' : has || (G.admin ? 'Umlackieren · gratis statt ' : 'Lackieren · ') + eur0(PAINT_PRICE)) + '</button></div>';
       h2 = '<div class="lab g-sub">Dachschmuck · gehört dir, passt auf jedes Auto, kann nichts außer auffallen</div>' + TOPS.map(tp => shopRow(tp, 'top', GAR.tops[tp.id], GAR.top === tp.id, U.arm === 'top:' + tp.id, ['Aufsetzen', 'Abnehmen', 'ist drauf', 'Ansehen'])).join('');
       if (l.optik >= 3) h += '<div class="lab g-sub">Neonfarbe · gratis</div><div class="g-sw">' + NEONS.map((p, i) => '<button type="button" data-neon="' + i + '" title="' + p[1] + '" aria-label="' + p[1] + '" class="' + (GAR.neon[t] === i ? 'on' : '') + '" style="--c:' + hex6(p[0]) + '"></button>').join('') + '</div>';
     }
   } else if (U.tab === 'haus') {
     h = LOOKHINT + CAR_ORDER.map(k => {
-      const cc = CARS[k], own = GAR.owned[k], cur = k === t, lock = intro >= 0 && intro < 2 && (k !== 'taxi' || intro === 0), look = U.look === k, price = G.admin ? 'gratis' : eur0(cc.price);      // first listen to Rudi, then the taxi, the rest later
+      const cc = CARS[k], own = GAR.owned[k], cur = k === t, lock = intro >= 0 && intro < 2 && (k !== 'taxi' || intro === 0), look = U.look === k, price = (G.admin ? 'gratis statt ' : '') + eur0(cc.price);      // first listen to Rudi, then the taxi, the rest later
       return '<div class="g-car' + (cur ? ' cur' : '') + (look ? ' look' : '') + '"><div class="g-ct"><b>' + cc.n + '</b><span>' + (cur ? 'fährst du gerade' : look ? 'steht auf der Bühne' : own ? 'in der Garage' : price) + '</span></div><p>' + cc.d + '</p>' +
         (look ? '<div class="lab g-cmp">Dein ' + CARS[t].n + ' → dieser</div>' + statBars(t, carStats(k), cc) : statBars(k)) +
         (cur ? '' : '<button type="button" class="' + (look && !own ? 'arm' : own ? '' : 'look') + '" data-car="' + k + '"' + (lock ? ' disabled' : '') + '>' + (own ? 'Einsteigen' : lock && intro === 0 ? 'Erst Rudi zuhören' : look ? 'Jetzt kaufen · ' + price : 'Ansehen · ' + price) + '</button>') + '</div>';
     }).join('');
   } else {
-    h = LOOKHINT + XUP.map(u => upRow(u, GAR[u.k], 'ex')).join('') + '<div class="lab g-sub">Hupe · erst anhören, dann kaufen</div>' + HORNS.map(hn => shopRow(hn, 'horn', GAR.horns[hn.id], GAR.horn === hn.id, U.arm === 'horn:' + hn.id, ['Einbauen', 'Ausbauen', 'ist eingebaut', 'Anhören'])).join('') + '<div class="lab g-sub">Radiosender · ' + (G.admin ? 'gratis' : eur0(RADIO_PRICE)) + ' pro Sender</div>' +
-      STATIONS.map((s, i) => { if (!s) return ''; const on = radioHas(i); return '<div class="g-row"><div class="g-rl"><b>' + s.n + '</b><small>' + (s.free ? 'ab Werk im Radio' : s.quest ? (on ? 'beim Rennen gewonnen' : 'gibt es nicht zu kaufen: Den Sender musst du dir verdienen') : s.d) + '</small></div><button type="button" class="' + (U.arm === 'radio:' + s.id ? 'arm' : 'look') + '" data-radio="' + s.id + '"' + (on || s.quest ? ' disabled' : '') + '>' + (on ? 'Im Radio' : s.quest ? 'Sondermission' : U.arm === 'radio:' + s.id ? 'Jetzt kaufen · ' + (G.admin ? 'gratis' : eur0(RADIO_PRICE)) : (G.admin ? 'gratis' : eur0(RADIO_PRICE))) + '</button></div>'; }).join('');
+    h = LOOKHINT + XUP.map(u => upRow(u, GAR[u.k], 'ex')).join('') + '<div class="lab g-sub">Hupe · erst anhören, dann kaufen</div>' + HORNS.map(hn => shopRow(hn, 'horn', GAR.horns[hn.id], GAR.horn === hn.id, U.arm === 'horn:' + hn.id, ['Einbauen', 'Ausbauen', 'ist eingebaut', 'Anhören'])).join('') + '<div class="lab g-sub">Radiosender · ' + ((G.admin ? 'gratis statt ' : '') + eur0(RADIO_PRICE)) + ' pro Sender</div>' +
+      STATIONS.map((s, i) => { if (!s) return ''; const on = radioHas(i); return '<div class="g-row"><div class="g-rl"><b>' + s.n + '</b><small>' + (s.free ? 'ab Werk im Radio' : s.quest ? (on ? 'beim Rennen gewonnen' : 'gibt es nicht zu kaufen: Den Sender musst du dir verdienen') : s.d) + '</small></div><button type="button" class="' + (U.arm === 'radio:' + s.id ? 'arm' : 'look') + '" data-radio="' + s.id + '"' + (on || s.quest ? ' disabled' : '') + '>' + (on ? 'Im Radio' : s.quest ? 'Sondermission' : U.arm === 'radio:' + s.id ? 'Jetzt kaufen · ' + ((G.admin ? 'gratis statt ' : '') + eur0(RADIO_PRICE)) : ((G.admin ? 'gratis statt ' : '') + eur0(RADIO_PRICE))) + '</button></div>'; }).join('');
   }
   body.innerHTML = h + h2; body.scrollTop = sc;
   $('g-close').firstChild.textContent = intro >= 0 && intro < 2 ? 'Erst ein Auto kaufen ' : U.ctx === 'shift' ? 'Zurück auf die Straße ' : 'In die Nacht starten '; $('g-close').disabled = intro >= 0 && intro < 2;
@@ -5261,6 +5412,11 @@ function renderGarage() {
 function garageClick(e) {
   const b = e.target.closest('button'); if (!b || b.disabled) return;
   const t = GAR.cur, l = GAR.lv[t], U = GAR_UI;
+  if (b.dataset.down && G.admin) {                                  // admin only: take one level back off, for testing
+    const [at, k] = b.dataset.down.split(':'), u = at === 'ex' ? XUP.find(x => x.k === k) : k === 'optik' ? OPTIK : UPG.find(x => x.k === k), o = at === 'ex' ? GAR : l;
+    if (o[k] > 0) { o[k]--; garReset(); toast(u.n + ' jetzt Stufe ' + o[k] + '.'); sfx('click'); applyCar(); garageScene(true); saveGame(); renderGarage(); }
+    return;
+  }
   if (b.id === 'gi-next') { U.intro = Object.keys(GAR.owned).length ? 2 : 1; if (U.intro === 2) U.tab = 'tuning'; sfx('click'); renderGarage(); return; }
   // look first: the first tap on anything for sale shows it, the second buys it. Any other tap puts the preview away
   const key = b.dataset.up ? 'up:' + b.dataset.up : b.dataset.ex ? 'ex:' + b.dataset.ex : b.dataset.radio ? 'radio:' + b.dataset.radio : b.dataset.car && !GAR.owned[b.dataset.car] ? 'car:' + b.dataset.car : b.dataset.top && !GAR.tops[b.dataset.top] ? 'top:' + b.dataset.top : b.dataset.horn && !GAR.horns[b.dataset.horn] ? 'horn:' + b.dataset.horn : null;
@@ -5361,7 +5517,7 @@ function openLos(k, s) {
   LOS.cur = { k, s, win, f: shuffle(f), done: false }; G.mode = 'los';
   $('los').hidden = false; $('los-name').textContent = L.n; $('los-tag').textContent = 'Rubbellos · ' + eur0(L.price); $('los-max').textContent = L.top;
   $('los').style.setProperty('--l1', L.c1); $('los').style.setProperty('--l2', L.c2);
-  $('los-res').textContent = 'Drei gleiche Beträge gewinnen.'; $('los-res').className = ''; $('los-all').hidden = false; $('los-ok').hidden = true;
+  $('los-res').textContent = 'Drei gleiche Beträge gewinnen.' + (typeof PAD !== 'undefined' && PAD.ui ? ' Stick hin und her wackeln zum Rubbeln.' : ''); $('los-res').className = ''; $('los-all').hidden = false; $('los-ok').hidden = true;
   drawLosBase(false); drawLosCover();
 }
 function fieldRect(i) { const c = i % 3, r = i / 3 | 0; return [18 + c * 150, 18 + r * 136, 142, 128]; }
@@ -5495,7 +5651,7 @@ function dlgLager(l) {
   const opts = [];
   if (L.cash > 0) opts.push({ label: 'Lagerkasse mitnehmen', sub: eur0(L.cash) + ' von den Läufern', stay: 1, fn: () => { const c = L.cash; L.cash = 0; G.stats.lagerEur += c; earn(c); sv(); } });
   opts.push(
-    { label: 'Kofferraum vollmachen', sub: outN > 0 ? outN + ' Päckchen mitnehmen' : L.stock ? 'Kofferraum ist voll' : 'Lager ist leer', dis: outN <= 0, stay: 1, fn: () => { L.stock -= outN; G.stock += outN; sfx('good'); G.routeT = 0; sv(); } },
+    { label: 'Kofferraum vollmachen', focus: 1, sub: outN > 0 ? outN + ' Päckchen mitnehmen' : L.stock ? 'Kofferraum ist voll' : 'Lager ist leer', dis: outN <= 0, stay: 1, fn: () => { L.stock -= outN; G.stock += outN; sfx('good'); G.routeT = 0; sv(); } },
     { label: '1 Päckchen mitnehmen', dis: outN <= 0, stay: 1, fn: () => { L.stock--; G.stock++; sfx('click'); G.routeT = 0; sv(); } },
     { label: 'Alles einlagern', sub: inN > 0 ? inN + ' Päckchen' : G.stock ? 'Lager ist voll' : 'Du hast nichts dabei', dis: inN <= 0, stay: 1, fn: () => { G.stock -= inN; L.stock += inN; L.dry = 0; sfx('good'); sv(); } },
     { label: '1 Päckchen einlagern', dis: inN <= 0, stay: 1, fn: () => { G.stock--; L.stock++; L.dry = 0; sfx('click'); sv(); } });
@@ -5518,10 +5674,21 @@ function dlgGross(g, pick) {
   const own = lagerOwn();
   if (!own.length) { dialog({ kind: 'gross', tag: 'Big M', title: g.name, text: '„Ick verkauf nur kistenweise. Wo willste dit denn hinpacken, in dein Handschuhfach? Kauf dir ’n Lager, die Remise am Helmholtzplatz is frei.“', opts: [{ label: 'Schon gut', esc: 1, fn: () => { } }] }); return; }
   const l = pick || own.slice().sort((a, b) => (lagerCap(b) - P.lager[b.id].stock) - (lagerCap(a) - P.lager[a.id].stock))[0], L = P.lager[l.id], fl = lagerCap(l) - L.stock, re = () => dlgGross(g, l);
-  const opts = GROSS.map(([n, f]) => {
-    const each = Math.round(G.depotPrice * f), cost = n * each;
-    return { label: n + ' Päckchen', sub: n > fl ? 'passt nicht mehr ins Lager' : eur0(cost) + ' · ' + eur0(each) + ' das Stück', dis: n > fl || G.money < cost, stay: 1, fn: () => { pay(cost, 'buy'); L.stock += n; L.dry = 0; sfx('good'); toast(n + ' Päckchen sind unterwegs ins Lager ' + l.name + '.', 'good'); saveGame(); } };
-  });
+  // below 10 Big M asks exactly what the Ticker asks (incl. its 8-and-more price); from 10 on it gets cheaper: 62 % at 25, 55 % from 50
+  const p0 = G.depotPrice, lin = (n, a, b, x, y) => x + (y - x) * (n - a) / (b - a);
+  const each = n => n < 10 ? tickPrice(n) : Math.round(n <= 25 ? lin(n, 10, 25, tickPrice(10), p0 * .62) : n <= 50 ? lin(n, 25, 50, p0 * .62, p0 * .55) : p0 * .55), cost = n => n * each(n);
+  let cap = 0; while (cap < fl && cost(cap + 1) <= G.money) cap++;
+  const R = { min: Math.min(1, cap), max: Math.max(1, cap), val: clamp(g._n || Math.min(25, cap), 1, Math.max(1, cap)), fmt: n => 'Menge: ' + n + ' Päckchen', right: n => cap < 1 ? '' : eur0(cost(n)) + ' insgesamt · ' + eur0(each(n)) + ' pro Päckchen' };
+  const buy = { label: '', sub: '', stay: 1, fn: () => { const n = R.val; if (n < 1 || n > cap) return; const c = cost(n); pay(c, 'buy'); L.stock += n; L.dry = 0; g._n = n; sfx('good'); toast(n + ' Päckchen sind unterwegs ins Lager ' + l.name + '.', 'good'); saveGame(); } };
+  R.on = n => {
+    const b = $('d-opts').querySelector('button[data-i="1"]'); if (!b) return;
+    buy.dis = cap < 1; b.disabled = buy.dis;
+    b.querySelector('.ol').textContent = cap < 1 ? (fl < 1 ? 'Lager ist voll' : 'Zu wenig Geld') : n + ' Päckchen kaufen';
+    const os = b.querySelector('.os') || b.appendChild(Object.assign(document.createElement('span'), { className: 'os' }));
+    os.textContent = cap < 1 ? '' : eur0(cost(n)) + ' · ' + eur0(each(n)) + ' das Stück';
+  };
+  const opts = [{ range: R, dis: cap < 1 }, buy];
+  if (cap > 0) opts.push({ label: 'So viel wie geht', sub: cap + ' Päckchen · ' + eur0(cost(cap)) + (cap < fl ? ' · mehr Geld hast du nicht' : ' · Lager voll'), stay: 1, fn: () => { R.val = cap; buy.fn(); } });
   if (own.length > 1) opts.push({ label: 'Anderes Lager beliefern', sub: 'jetzt: ' + l.name, fn: () => dialog({ kind: 'gross', tag: 'Big M', title: 'Wohin soll die Lieferung?', text: '„Sag an, mein Fahrer hat nich ewig Zeit.“', opts: own.map(o => ({ label: o.name, sub: P.lager[o.id].stock + '/' + lagerCap(o) + ' belegt', fn: () => dlgGross(g, o) })).concat([{ label: 'Zurück', esc: 1, fn: re }]) }) });
   if (G.debt > 0) opts.push({ label: G.money >= G.debt ? 'Schulden bei Mischa begleichen' : 'Anzahlung für Mischa', sub: eur0(Math.min(G.debt, G.money)), dis: G.money < 1, stay: 1, fn: () => payDebt(Math.min(G.debt, G.money)) });
   opts.push({ label: 'Nix, danke', esc: 1, fn: () => { } });
@@ -5677,46 +5844,46 @@ const RACERS = [
 ];
 /* special races: a character with a face and a prize that is not money alone; each can be won once */
 const SPECIAL = [
-  { id: 'dj', who: 'DJ-Drehzeug', ch: 'dj', car: 'moped', col: 0x0c0c10, k: .52, x: -520, y: 1297, night: 3, dist: [480, 720], prize: 'Sender DJ-Drehzeug FM 104,39',
+  { boosts: 1, course: [[-569, 1123], [-857, 702]], id: 'dj', who: 'DJ-Drehzeug', ch: 'dj', car: 'moped', col: 0x0c0c10, k: .52, x: -520, y: 1297, night: 3, dist: [480, 720], prize: 'Sender DJ-Drehzeug FM 104,39',
     call: ['Unbekannt', 'Ey, Taxi. Paul-Robeson-Straße 39. Komm vorbei, wenn de dich traust. Schwarzes Moped, kannste nich verfehlen.'],
     pre: ['Yo. Du bist der Neue mit dem Taxi, wa? Ick bin DJ-Drehzeug. 104,39, kennste? Nee, kennste nich. Hat ja keiner die Frequenz.', 'Pass uff: Rennen. Du in deiner Karre, ick uff meinem Moped. Gewinnst du, schalt ick dir meinen Sender frei. Gewinn ick, haste halt Pech jehabt.'],
     win: ['Okay, okay. Die Kiste hat wat drauf. Deal is Deal: 104,39 läuft ab jetzt in deinem Radio.', 'Dreh uff. Und sag’s weiter.'], lose: 'Haha! Vom Moped abgezogen. Komm wieder, wenn de fahren kannst. Ick steh hier jede Nacht.',
     give: () => { GAR.radio.dj = 1; const i = STATIONS.findIndex(s => s && s.id === 'dj'); if (i > 0) radioSet(i); } },
-  { id: 'lars', who: 'Lasten-Lars', ch: 'lars', car: 'lasti', col: 0x6f8f4a, k: .82, hard: 1.26, x: -40, y: -400, night: 4, dist: [600, 850], prize: '250 € und der Kofferraum voll Mate',
+  { boosts: 1, trait: 'wendig', course: [[127, -543], [416, -864]], id: 'lars', who: 'Lasten-Lars', ch: 'lars', car: 'lasti', col: 0x6f8f4a, k: .82, hard: 1.26, x: -40, y: -400, night: 4, dist: [600, 850], prize: '250 € und ein Mate-Platz mehr, als die Garage hergibt', need: () => GAR.cup >= 3,
     call: ['Lasten-Lars', 'Hallo! Hier ist der Lars vom Kollwitzplatz. Ich finde ja, Autos haben im Kiez nichts verloren. Ich würde dir das gern beweisen. Sportlich.'],
-    pre: ['Ah, da bist du ja. Also, meine These: Das Lastenrad ist dem Auto in der Stadt überlegen. E-Motor, 250 Watt, und ich kenne jede Abkürzung.', 'Wenn du gewinnst, spendier ich dir eine Kiste Mate und lege was drauf. Wenn ich gewinne, denkst du mal über dein Leben nach.'],
+    pre: ['Ah, da bist du ja. Also, meine These: Das Lastenrad ist dem Auto in der Stadt überlegen. E-Motor, 250 Watt, und ich kenne jede Abkürzung.', 'Wenn du gewinnst, bau ich dir mein Kühlfach ein. Da passt noch eine Mate mehr rein, als deine Garage hergibt. Und ich lege was drauf. Wenn ich gewinne, denkst du mal über dein Leben nach.', 'Und mit dem Rad komm ich durch jede Lücke. Stau gibt’s für mich nicht. Turbo hab ich auch, einen.'],
     win: ['Hm. Das lag am Gegenwind. Trotzdem: versprochen ist versprochen. Hier, die Mate. Bio natürlich.'], lose: 'Siehst du? Muskelkraft und ein bisschen Akku. Denk mal drüber nach. Ich bin jede Nacht hier.',
-    give: () => { G.mate = G.mateMax; earn(250); } },
-  { id: 'rolf', who: 'Renn-Rolf', ch: 'rolf', car: 'hatch', col: 0xc8302a, k: 1.06, hard: 1.22, x: 620, y: 520, night: 5, dist: [800, 1150], prize: '700 € und Rennreifen, die für immer drauf bleiben',
+    give: () => { G.mateMax++; G.mate = G.mateMax; earn(250); banner('Freigeschaltet', 'Lars’ Kühlfach', 'Ein Platz mehr für Turbo-Mate, für immer', 'day'); } },
+  { boosts: 2, trait: 'block', course: [[670, 671], [120, 520]], id: 'rolf', who: 'Renn-Rolf', ch: 'rolf', car: 'hatch', col: 0xc8302a, k: 1.06, hard: 1.22, x: 620, y: 520, night: 5, dist: [800, 1150], prize: '700 € und Rennreifen, die für immer drauf bleiben',
     call: ['Renn-Rolf', 'Man hört, du fährst janz ordentlich. Ick bin der Rolf. Prenzlauer Allee. Bring Sprit mit.'],
-    pre: ['Renn-Rolf. Nürburgring ’94, dritter Platz in der Klasse bis 1600 Kubik. Seitdem fahr ick nur noch nachts.', 'Du gegen mich, lange Strecke. Wenn de gewinnst, kriegste meine Rennreifen und ’n Umschlag. Ick verlier aber nich.'],
+    pre: ['Renn-Rolf. Nürburgring ’94, dritter Platz in der Klasse bis 1600 Kubik. Seitdem fahr ick nur noch nachts.', 'Du gegen mich, lange Strecke. Wenn de gewinnst, kriegste meine Rennreifen und ’n Umschlag. Ick verlier aber nich.', 'Und überholen lass ick mich nich. Wer hinter mir is, bleibt hinter mir. Zwee Turbo hab ick ooch dabei.'],
     win: ['Dit jibt’s nich. Dit jibt’s einfach nich. Na jut. Die Reifen jehörn dir. Pfleg se.'], lose: 'Dritter Platz, sag ick doch. Du bist höchstens Vierter. Komm wieder.',
     give: () => { G.grip2 = Math.max(G.grip2, 2.2); earn(700); } },
-  { id: 'anwalt', who: 'Dr. Schlupfloch', ch: 'anwalt', car: 'benz', col: 0x8f959e, k: 1.02, hard: 1.2, x: -380, y: -120, night: 5, dist: [750, 1050], prize: 'Dr. Schlupfloch als dein Anwalt: Blitzer, Kontrollen und Festnahmen kosten nur noch die Hälfte',
+  { boosts: 2, trait: 'kurve', course: [[-214, 122], [120, 520]], id: 'anwalt', who: 'Dr. Schlupfloch', ch: 'anwalt', car: 'benz', col: 0x8f959e, k: 1.02, hard: 1.2, x: -380, y: -120, night: 5, dist: [750, 1050], prize: 'Dr. Schlupfloch als dein Anwalt: Blitzer, Kontrollen und Festnahmen kosten nur noch die Hälfte',
     call: ['Kanzlei Schlupfloch', 'Schlupfloch, Rechtsanwalt. Ich habe Ihre Akte gelesen, sie ist bemerkenswert dick. Ich vertrete nur Mandanten, die schneller sind als ich. Beweisen Sie es.'],
-    pre: ['Dr. Schlupfloch. Verkehrsrecht, Strafrecht, und was sonst so anfällt. Meine Mandanten zahlen nur die Hälfte, ich finde immer ein Formfehlerchen.', 'Mein Honorar ist ein Rennen. Gewinnen Sie, bin ich Ihr Anwalt, auf Lebenszeit und ohne Rechnung. Verlieren Sie, haben Sie heute Abend nichts verloren außer Ihrer Würde.'],
+    pre: ['Dr. Schlupfloch. Verkehrsrecht, Strafrecht, und was sonst so anfällt. Meine Mandanten zahlen nur die Hälfte, ich finde immer ein Formfehlerchen.', 'Mein Honorar ist ein Rennen. Gewinnen Sie, bin ich Ihr Anwalt, auf Lebenszeit und ohne Rechnung. Verlieren Sie, haben Sie heute Abend nichts verloren außer Ihrer Würde.', 'Ich fahre sauber, ohne Rempeln. Aber in Kurven bin ich unangenehm schnell. Und zwei Turbos habe ich, das ist rechtlich einwandfrei.'],
     win: ['Einspruch abgelehnt, sozusagen. Na schön: Ab sofort vertrete ich Sie. Blitzer, Kontrollen, Festnahmen, ich halbiere das. Bei Banken allerdings … da kann ich nichts für Sie tun. Das wäre unseriös.'], lose: 'Das Urteil ist eindeutig. Revision ist möglich, morgen Nacht, gleiche Stelle.',
     give: () => { banner('Freigeschaltet', 'Dein Anwalt', 'Blitzer, Verkehrskontrollen und Festnahmen kosten nur noch die Hälfte', 'day'); } },
-  { id: 'baron', who: 'Der Baron', ch: 'baron', car: 'super', col: 0x101014, k: 1.12, hard: 1.28, x: 330, y: -1180, night: 7, dist: [1000, 1400], prize: '3.000 €',
+  { boosts: 3, trait: 'speed', course: [[127, -543], [283, -485], [1009, -497]], id: 'baron', who: 'Der Baron', ch: 'baron', car: 'super', col: 0x101014, k: 1.12, hard: 1.28, x: 330, y: -1180, night: 7, dist: [1000, 1400], prize: '3.000 €',
     call: ['Unterdrückte Nummer', 'Guten Abend. Man nennt mich den Baron. Ich sammle schnelle Dinge und langweile mich. Unterhalten Sie mich.'],
-    pre: ['Sie sind also das Taxi, von dem der ganze Bezirk redet. Reizend. Ich fahre etwas Italienisches. Sie fahren … das da.', 'Ein Rennen. Gewinnen Sie, gehören Ihnen dreitausend Euro. Verlieren Sie, haben Sie mir immerhin den Abend verkürzt.'],
+    pre: ['Sie sind also das Taxi, von dem der ganze Bezirk redet. Reizend. Ich fahre etwas Italienisches. Sie fahren … das da.', 'Ein Rennen. Gewinnen Sie, gehören Ihnen dreitausend Euro. Verlieren Sie, haben Sie mir immerhin den Abend verkürzt.', 'Mein Wagen hat mehr PS als Ihr ganzer Block. In engen Kurven ist er, nun ja, etwas eigen. Drei Turbos, selbstverständlich.'],
     win: ['Bemerkenswert. Wirklich. Ihr Geld. Und meinen Respekt, der ist seltener.'], lose: 'Wie erwartet. Aber Sie dürfen es gern wieder versuchen. Ich habe Zeit.',
     give: () => earn(3000) },
-  { id: 'bigm', who: 'Big M', ch: 'bigm', car: 'muscle', col: 0x121216, k: 1.1, hard: 1.25, x: 276, y: -678, on: 'Prenzlauer Allee', night: 6, dist: [950, 1300], prize: 'Lager kaufen und kistenweise bei ihm holen',
+  { boosts: 3, trait: 'ramm', course: [[127, -543], [416, -864], [733, -590], [1009, -497], [1058, -454]], id: 'bigm', who: 'Big M', ch: 'bigm', car: 'suv', col: 0x0a0a0c, k: 1.1, hard: 1.25, x: 276, y: -678, on: 'Prenzlauer Allee', night: 6, dist: [950, 1300], prize: 'Lager kaufen und kistenweise bei ihm holen',
     call: ['Big M', 'Prenzlauer Allee 34. Man sagt, du willst groß einsteigen. Dann komm vorbei und zeig, dass de fahren kannst.'],
-    pre: ['Big M. Kistenweise, keine Fragen. Aber ick verkauf nich an jeden, der mit ’nem Taxi vorfährt.', 'Rennen, lange Strecke. Schlägst du mich, kannste Lager kaufen, und ick liefer dir die Kisten direkt rein. Verlierst du, siehste mich morgen wieder.'],
+    pre: ['Big M. Kistenweise, keine Fragen. Aber ick verkauf nich an jeden, der mit ’nem Taxi vorfährt.', 'Rennen, lange Strecke. Schlägst du mich, kannste Lager kaufen, und ick liefer dir die Kisten direkt rein. Verlierst du, siehste mich morgen wieder.', 'Und ick fahr nich zimperlich. Meine Jungs ooch nich, die stehn irgendwo uff der Strecke. Drei Turbo, nur dass de’s weeßt.'],
     win: ['Respekt. Dit hab ick lange nich erlebt.', 'Deal: Kauf dir ’n Lager, die Remise am Helmholtzplatz is frei. Dann holste bei mir, kistenweise. Und nimm meinen Neffen Paul mit, der will laufen.'],
     lose: 'Zu langsam für die großen Mengen. Komm morgen wieder.',
-    give: () => { recruit('Praktikanten-Paul', true); bizMarks(); banner('Freigeschaltet', 'Lager und Läufer', 'Lager auf der Karte (blaue Vierecke) · Big M liefert ganze Kisten', 'kiez'); } },
+    give: () => { recruit('Praktikanten-Paul', true); bizMarks(); banner('Freigeschaltet', 'Lager und Läufer', 'Lager auf der Karte (blaue Vierecke) · Big M liefert ganze Kisten', 'kiez'); setTimeout(() => { if (G.live) taxiQuit(); }, 9000); } },
 ];
 /* a beaten boss wants a rematch two nights later: harder, and for money */
 const REMATCH = [
-  ['dj', 300, 'Revanche, Taxi. Ick hab am Moped jeschraubt. Diesmal um Kohle.', 'Wieder du. Ick verkauf dit Moped.'],
-  ['lars', 450, 'Ich hab trainiert. Und einen neuen Akku. Revanche? Diesmal um Geld, das spende ich dann.', 'Okay. Ich gebe zu: Das Auto hat Vorteile. Manchmal.'],
-  ['rolf', 900, 'Ick konnt nich schlafen. Noch mal, Strecke länger, Einsatz höher.', 'Vierter Platz. Für mich. Dit sag ick keinem.'],
-  ['bigm', 800, 'Du hast mich einmal jeschlagen. Einmal. Komm, noch ’ne Runde, um richtig Geld.', 'Jut. Jetzt weeß ick, wem ick die Kisten verkaufe.'],
-  ['baron', 1500, 'Ich habe mir ein schnelleres Auto gekauft. Sie verstehen sicher, dass ich das prüfen muss.', 'Zweimal. Ich bin beeindruckt. Und ein wenig ärmer.'],
-].map(([base, eur, pre, win]) => { const s = SPECIAL.find(x => x.id === base); return Object.assign({}, s, { id: base + '2', base, night: s.night + 2, hard: (s.hard || 1.12) * 1.06, k: s.k * 1.04, prize: eur0(eur), pre: [pre], win: [win], lose: 'Siehste. Komm wieder, wenn de dich traust.', give: () => earn(eur), call: [s.who, pre] }); });
+  ['dj', 450, 'Revanche, Taxi. Ick hab am Moped jeschraubt. Diesmal um Kohle. Aber ohne Kratzer, mein Moped is frisch lackiert.', 'Wieder du. Ick verkauf dit Moped.', 'clean'],
+  ['lars', 650, 'Ich hab trainiert. Und einen neuen Akku. Revanche? Diesmal um Geld, das spende ich dann. Und fair: kein Turbo, nur Muskelkraft und Motor.', 'Okay. Ich gebe zu: Das Auto hat Vorteile. Manchmal.', 'noturbo'],
+  ['rolf', 1300, 'Ick konnt nich schlafen. Noch mal, Strecke länger, Einsatz höher. Ohne Kratzer, wie früher am Ring.', 'Vierter Platz. Für mich. Dit sag ick keinem.', 'clean'],
+  ['bigm', 1200, 'Du hast mich einmal jeschlagen. Einmal. Komm, noch ’ne Runde, um richtig Geld. Aber ohne deine Wundermate.', 'Jut. Jetzt weeß ick, wem ick die Kisten verkaufe.', 'noturbo'],
+  ['baron', 2200, 'Ich habe mir ein schnelleres Auto gekauft. Sie verstehen sicher, dass ich das prüfen muss. Ohne Kratzer, bitte, der Lack war teuer.', 'Zweimal. Ich bin beeindruckt. Und ein wenig ärmer.', 'clean'],
+].map(([base, eur, pre, win, rule]) => { const s = SPECIAL.find(x => x.id === base); return Object.assign({}, s, { id: base + '2', base, rule, boosts: (s.boosts || 1) + 1, night: s.night + 2, hard: (s.hard || 1.12) * 1.06, k: s.k * 1.04, prize: eur0(eur), pre: [pre], win: [win], lose: 'Siehste. Komm wieder, wenn de dich traust.', give: () => earn(eur), call: [s.who, pre] }); });
 function bikeModel(kind, col) {
   const c = new THREE.Color(col), body = [c.r, c.g, c.b], dk = [.07, .07, .09], sk = [.8, .62, .5], m = new MB(), lasti = kind === 'lasti';
   const fx = lasti ? 1.25 : .62;
@@ -5743,12 +5910,15 @@ class Racer extends Car {
       scene.add(g); this.mod[key] = g;
     }
     this.g = g; const bike = R.car === 'moped' || R.car === 'lasti';
-    this.cl = bike ? .55 : clamp(SHAPE[R.car].L / 2 - 1.05, .85, 1.6); this.cr = bike ? .55 : 1; this.mass = bike ? .3 : CARS[R.car].mass; this.k = R.k;
+    this.cl = bike ? .55 : clamp(SHAPE[R.car].L / 2 - 1.05, .85, 1.6); this.cr = bike ? .55 : 1; this.mass = bike ? .3 : CARS[R.car].mass * (R.trait === 'ramm' ? 5 : 1); this.k = R.k;      // Big M's SUV weighs like a lorry
     // as fast as your own car times the racer's factor, so a race stays a race whatever you drive
     // hard: 1 = as before (DJ, the first race), up to about 1.3 for the big money. Faster, quicker off the line, better through the corners
     this.hard = hard || 1; const hx = this.hard - 1;
-    this.acc = G.cs.acc * (.9 + .12 * R.k) * (1 + hx * 1.6); this.vmax = G.cs.vmax * R.k * (1 + hx * .75); this.grip = Math.max(7.8, G.cs.grip) * (bike ? 1.15 : 1) * (1 + hx * .8); this.turn = (bike ? 3.3 : 2.9) * (1 + hx * .5);
-    this.boost = hx > .1 ? Math.round(hx * 10) : 0; this.bt = 0;          // turbo bursts on long straights, like your Mate
+    this.acc = G.cs.acc * (.9 + .12 * R.k) * (1 + hx * 1.6) * 1.3; this.vmax = G.cs.vmax * R.k * (1 + hx * .75) * 1.09; this.grip = Math.max(7.8, G.cs.grip) * (bike ? 1.15 : 1) * (1 + hx * .8) * 1.1; this.turn = (bike ? 3.3 : 2.9) * (1 + hx * .5) * 1.1;      // rivals made tougher twice: +30 % pull, +9 % top speed, +10 % grip and steering
+    this.trait = R.trait || ''; if (this.trait === 'speed') this.vmax *= 1.12;      // the Baron: top speed, but clumsy in tight corners
+    this.boost = R.boosts !== undefined ? R.boosts : 1; this.bt = 0; this.acc0 = this.acc; this.grip0 = this.grip; this.ramT = 0;      // a turbo as strong as yours, fired on straights or to answer yours
+    if (!g.userData.flame) { const f = new THREE.Mesh(new THREE.BoxGeometry(1.5, .32, .55), new THREE.MeshBasicMaterial({ color: 0xff7a1a, blending: THREE.AdditiveBlending, transparent: true, opacity: .9, depthWrite: false })); f.position.set(-(this.cl + 1.5), .5, 0); g.add(f); g.userData.flame = f; }
+    this.flame = g.userData.flame; this.flame.visible = false;
     this.base = this.vmax; this.vx = this.vy = this.vf = this.vr = 0; this.rev = 0; this.stuck = 0; this.stun = 0; this.re = 0; this.on = true; g.visible = true;
   }
   kill() { this.on = false; if (this.g) this.g.visible = false; }
@@ -5804,14 +5974,21 @@ class Racer extends Car {
     let look = clamp(7 + sp * .5, 9, 20), tx = fin.x, ty = fin.y; const Ln = this.line;
     for (let i = 0, px = this.x, py = this.y; i + 1 < Ln.length; i++) { const q = Ln[i + 1], d = hyp(q[0] - px, q[1] - py); if (d >= look || i + 2 === Ln.length) { const f = d > 0 ? Math.min(1, look / d) : 1; tx = px + (q[0] - px) * f; ty = py + (q[1] - py) * f; break; } look -= d; px = q[0]; py = q[1]; }
     if (hyp(fin.x - this.x, fin.y - this.y) < 30) { tx = fin.x; ty = fin.y; }
-    const sh = this.dodge(sp, hx, hy); this.sh = (this.sh || 0) + (sh - (this.sh || 0)) * Math.min(1, dt * 6); tx += -hy * this.sh * 1.7; ty += hx * this.sh * 1.7;
+    const sh = this.trait === 'wendig' || this.trait === 'ramm' ? (this.block = null, 0) : this.dodge(sp, hx, hy); this.sh = (this.sh || 0) + (sh - (this.sh || 0)) * Math.min(1, dt * 6); tx += -hy * this.sh * 1.7; ty += hx * this.sh * 1.7;
+    const pdx = PL.x - this.x, pdy = PL.y - this.y, pf = pdx * hx + pdy * hy, plat = -pdx * hy + pdy * hx, pd = hyp(pdx, pdy);
+    if (this.trait === 'block' && pf < -2 && pd < 30 && G.race && G.race.go) { const s = clamp(plat, -3, 3); tx += -hy * s; ty += hx * s; }      // Rolf: sits on your line when you are right behind him
+    if (this.trait === 'ramm' && G.race && G.race.go) { if (this.ramT > 0) this.ramT -= dt; else if (pd < 7 && Math.abs(pf) < 5 && Math.abs(plat) > 1.5) { this.ramT = 4; this.ramN = .6; } if (this.ramN > 0) { this.ramN -= dt; tx = PL.x; ty = PL.y; } }      // Big M: swerves into you when you are alongside
     this.tx = tx; this.ty = ty;
     // rubber band: in easy races it lets you catch up, in hard ones it hardly eases off and fights back when it falls behind
     const hd = this.hard - 1, ease = hd > .05 ? (lead > 160 ? .97 : 1) : (lead > 140 ? .86 : lead > 70 ? .94 : 1), push = lead < -220 ? 1.08 + hd * .6 : lead < -100 ? 1.04 + hd * .4 : 1;
-    if (this.bt > 0) this.bt -= dt; else if (this.boost > 0 && this.corner < .35 && this.cd > 70 && sp > 10 && lead < 60 && !this.block) { this.boost--; this.bt = 3.2; }
-    this.vmax = this.base * ease * push * (this.bt > 0 ? 1.3 : 1);
+    if (this.bt > 0) this.bt -= dt;
+    else if (this.boost > 0 && G.race && G.race.go && sp > 8 && !this.block && ((this.corner < .35 && this.cd > 60 && lead < 40) || (G.turbo > 0 && lead < 0 && pd < 90))) {
+      this.boost--; this.bt = 4.5; say(this.x, this.y, 'Turbo!'); sfx('turbo', clamp(1 - pd / 140, .25, 1));
+    }
+    const on = this.bt > 0; this.flame.visible = on; this.flame.scale.x = on ? .8 + Math.random() * .5 : 1;
+    this.vmax = this.base * ease * push * (on ? 1.35 : 1); this.acc = this.acc0 * (on ? 2.4 : 1); this.grip = this.grip0 * (on ? 1.8 : 1);
     const diff = angDiff(Math.atan2(ty - this.y, tx - this.x), this.a); let thr = 1, st = clamp(diff * 2.6, -1, 1);
-    const vc = this.vmax * (1 - (.62 - hd * .45) * clamp(this.corner / 1.5, 0, 1)), dc = this.apx && this.corner ? hyp(this.apx[0] - this.x, this.apx[1] - this.y) : 999;
+    const cf = this.trait === 'kurve' ? .5 : this.trait === 'speed' ? 1.4 : this.trait === 'wendig' ? .6 : 1, vc = this.vmax * (1 - (.62 - hd * .45) * cf * clamp(this.corner / 1.5, 0, 1)), dc = this.apx && this.corner ? hyp(this.apx[0] - this.x, this.apx[1] - this.y) : 999;
     if (this.corner > .45 && sp > vc && dc < 6 + (sp * sp - vc * vc) / 15) thr = -1;                    // brake for the corner
     if (this.block && sp > this.block.v + 1.5 && this.block.f < 5 + (sp - this.block.v) * 1.3) thr = -1;         // someone in the way and no room to pass
     if (Math.abs(diff) > 1.2) thr = Math.min(thr, .4); if (Math.abs(diff) > 1 && sp > 14) thr = -.6;
@@ -5819,7 +5996,8 @@ class Racer extends Car {
     else if (this.rev > 0) { this.rev -= dt; thr = -1; st = -st; }
     else if (thr > .2 && sp < 1) { this.stuck += dt; if (this.stuck > 1.1) { this.rev = .9; this.stuck = 0; } } else this.stuck = 0;
     this.step(dt, thr, st, false); this.hitParked();
-    for (const t of TRAF) if (t.on && Math.abs(t.x - this.x) < 6 && Math.abs(t.y - this.y) < 6) this.pushOut(t.x, t.y, 1.5, t.vx, t.vy, t.mass);
+    if (this.trait === 'ramm') { for (const t of TRAF) if (t.on && !t.fly && hyp(t.x - this.x, t.y - this.y) < 4.2) { const d = hyp(t.x - this.x, t.y - this.y) || 1; t.knock(this.vx * .9 + (t.x - this.x) / d * 7, this.vy * .9 + (t.y - this.y) / d * 7); sfx('crash', clamp(1 - hyp(this.x - PL.x, this.y - PL.y) / 80, .1, .7)); sparks(t.x, t.y, 8); } }      // Big M: cars in his way get thrown aside, he barely slows down
+    else if (this.trait !== 'wendig') for (const t of TRAF) if (t.on && Math.abs(t.x - this.x) < 6 && Math.abs(t.y - this.y) < 6) this.pushOut(t.x, t.y, 1.5, t.vx, t.vy, t.mass);      // Lars squeezes through
   }
 }
 let RACER = null;
@@ -5834,7 +6012,7 @@ function raceMark(sp) { const m = mkMarker('race', sp.on ? spotOn(sp.x, sp.y, sp
 function dlgRace(m) {
   const R = m.ref.R, sp = m.ref.sp;
   if (sp) {
-    const ask = () => dialog({ kind: 'race', tag: sp.base ? 'Revanche' : 'Besonderes Rennen', title: sp.who, text: 'Gewinnst du, gibt es: ' + sp.prize + '. Verlieren kostet nichts außer Stolz. Du hast einen Versuch pro Nacht.', meta: 'Strecke: quer durch den Kiez · das Navi zeigt den Weg zum Ziel', opts: [
+    const ask = () => dialog({ kind: 'race', tag: sp.base ? 'Revanche' : 'Besonderes Rennen', title: sp.who, text: 'Gewinnst du, gibt es: ' + sp.prize + '. Verlieren kostet nichts außer Stolz. Du hast einen Versuch pro Nacht.' + (sp.rule ? ' Abgemacht: ' + RULE[sp.rule] + '.' : ''), meta: (sp.who + ' hat ' + (sp.boosts || 1) + ' × Turbo dabei') + ' · Strecke quer durch den Kiez, das Navi zeigt den Weg', opts: [
       { label: 'Rennen fahren', sub: G.fare ? 'erst den Fahrgast abliefern' : G.heat ? 'nicht, solange dich die Polizei sucht' : 'Start in drei Sekunden', dis: !!G.fare || G.heat > 0, fn: () => startRace(m, 0) },
       { label: 'Später', esc: 1, fn: () => { } }] });
     if (!m.met) { m.met = 1; talk(sp.ch, sp.pre, ask); } else ask();
@@ -5852,6 +6030,12 @@ function startRace(m, stake) {
   const bx = sg.ax + sg.dx * s.t, by = sg.ay + sg.dy * s.t;
   const ring = W.spotSegs.filter(q => { const d = hyp((q.ax + q.bx) / 2 - bx, (q.ay + q.by) / 2 - by); return d > lo * .5 && d < hi * .95 && q.len > 20; });
   for (let k = 0; k < 40 && !fin && ring.length; k++) { const q = pick(ring), d = curbSpot(q, rnd(8, q.len - 8), Math.random() < .5 ? 1 : -1); r = routeBetween(bx, by, d.x, d.y); if (r && r.dist > lo && r.dist < hi && !MK.some(z => hyp(z.x - d.x, z.y - d.y) < 20)) fin = d; }
+  let gates = null, legs = null;
+  if (sp && sp.course) {                                   // story races: a fixed course through the Kiez, gate by gate, the last point is the finish
+    gates = sp.course.map(p => spotNear(p[0], p[1])); legs = []; let tot = 0, px = bx, py = by;
+    for (const g of gates) { const q = routeBetween(px, py, g.x, g.y), d = q ? q.dist : hyp(g.x - px, g.y - py); legs.push(d); tot += d; px = g.x; py = g.y; }
+    fin = gates[0]; r = routeBetween(bx, by, fin.x, fin.y) || { dist: legs[0], pts: [[bx, by], [fin.x, fin.y]] }; r = Object.assign({}, r, { dist: tot });
+  }
   if (!fin) { toast('„Heute nich. Zu viel los uff der Straße.“'); return; }
   if (stake) pay(stake);
   if (!RACER) RACER = new Racer();
@@ -5866,15 +6050,19 @@ function startRace(m, stake) {
   o.x = bx - hy * off; o.y = by + hx * off; o.a = ha; place(o.g, o.x, o.y, o.a);
   place(PLG, PL.x, PL.y, PL.a); CAM.x = PL.x; CAM.y = PL.y; CAM.yaw = PL.a;
   for (const t of TRAF) if (t.on && hyp(t.x - bx, t.y - by) < 14) t.kill();            // clear the grid
-  G.race = { R, sp, who: R.who, stake, spot: s, fin: mkMarker('fin', fin, { name: 'Ziel' }, 8), opp: o, t: 0, go: false, d0: r.dist };
+  G.race = { R, sp, who: R.who, stake, spot: s, fin: mkMarker('fin', fin, { name: gates && gates.length > 1 ? 'Tor 1' : 'Ziel' }, 8), opp: o, t: 0, go: false, d0: r.dist, rule: sp ? sp.rule : '', hits: 0, gates, legs, gi: 0, mate0: G.mate, mateMax: G.mateMax }; o.gi = 0;
+  if (!sp) o.boost = stake >= 3 * (40 + 20 * Math.min(P.night, 8)) ? 2 : 1;
   rmMarker(m); G.freeze = 3.3; G.gpsPick = null; G.routeT = 0; G.race.beep = 4; G.raced[R.who] = 1; o.line = null; o.sh = 0; o.block = null;
   if (G.offer) answerOffer(false, true);
 }
+const RULE = { noturbo: 'ohne Turbo-Mate', clean: 'ohne Kratzer, ein Rempler und du hast verloren' };
+const restOf = (rc, i) => { let d = 0; if (rc.legs) for (let k = i + 1; k < rc.legs.length; k++) d += rc.legs[k]; return d; };
+const mateTip = rc => 'Du hattest nur ' + rc.mate0 + ' von ' + rc.mateMax + ' Turbo-Mate dabei. Mach den Becherhalter voll, bevor du wiederkommst. Grüne Säulen verkaufen welche.';
 const raceLine = () => G.race ? 'Rennen gegen ' + G.race.who + (G.race.stake ? ' · Einsatz ' + eur0(G.race.stake) : '') : '';
 function raceSub() {
   const rc = G.race; if (!rc) return ''; if (!rc.go) return 'Achtung …';
-  const me = G.rt.nav ? G.rt.nav.d : hyp(PL.x - rc.fin.x, PL.y - rc.fin.y), lead = rc.opp.rd - me;
-  return 'Ziel in ' + m10(me) + ' · ' + (Math.abs(lead) < 12 ? 'Kopf an Kopf' : lead > 0 ? m10(lead) + ' vorn' : m10(-lead) + ' hinten');
+  const me = (G.rt.nav ? G.rt.nav.d : hyp(PL.x - rc.fin.x, PL.y - rc.fin.y)) + restOf(rc, rc.gi), lead = rc.opp.rd + restOf(rc, rc.opp.gi || 0) - me;
+  return (rc.gates && rc.gates.length > 1 ? 'Tor ' + Math.min(rc.gi + 1, rc.gates.length) + '/' + rc.gates.length + ' · ' : '') + 'Ziel in ' + m10(me) + ' · ' + (Math.abs(lead) < 12 ? 'Kopf an Kopf' : lead > 0 ? m10(lead) + ' vorn' : m10(-lead) + ' hinten') + ' · Gegner-Turbo ' + rc.opp.boost + (rc.rule === 'noturbo' ? ' · ohne Turbo' : rc.rule === 'clean' ? ' · ohne Kratzer' : '');
 }
 function updRace(dt) {
   const rc = G.race, o = rc.opp;
@@ -5885,12 +6073,20 @@ function updRace(dt) {
     place(o.g, o.x, o.y, o.a); return;
   }
   rc.t += dt;
-  const me = G.rt.nav ? G.rt.nav.d : hyp(PL.x - rc.fin.x, PL.y - rc.fin.y), lead = o.rd - me;
-  o.drive(dt, rc.fin, -lead); place(o.g, o.x, o.y, o.a);
+  const me = (G.rt.nav ? G.rt.nav.d : hyp(PL.x - rc.fin.x, PL.y - rc.fin.y)) + restOf(rc, rc.gi), ofin = rc.gates ? rc.gates[o.gi] : rc.fin, lead = o.rd + restOf(rc, o.gi || 0) - me;
+  o.drive(dt, ofin, -lead); place(o.g, o.x, o.y, o.a);
+  if (rc.gates && o.gi < rc.gates.length - 1 && hyp(o.x - ofin.x, o.y - ofin.y) < 9) { o.gi++; o.line = null; }      // the rival takes the same gates
+  if (rc.gates && rc.gi < rc.gates.length - 1 && hyp(PL.x - rc.fin.x, PL.y - rc.fin.y) < 10) {             // through the gate: the next one lights up
+    rc.gi++; rmMarker(rc.fin); const last = rc.gi === rc.gates.length - 1; rc.fin = mkMarker('fin', rc.gates[rc.gi], { name: last ? 'Ziel' : 'Tor ' + (rc.gi + 1) }, 8); G.routeT = 0;
+    pop(last ? 'LETZTES STÜCK' : 'TOR ' + rc.gi + '/' + rc.gates.length, 'plus'); sfx('click');
+  }
   setTask('Rennen gegen ' + rc.who, raceSub(), clamp(1 - me / rc.d0, 0, 1));
-  if (hyp(PL.x - rc.fin.x, PL.y - rc.fin.y) < 10) return endRace(true);
-  if (hyp(o.x - rc.fin.x, o.y - rc.fin.y) < 8) return endRace(false, rc.who + ' war zuerst da.');
-  if (rc.t > 240) endRace(false, 'Das hat zu lange gedauert.');
+  if (rc.rule === 'clean' && rc.hits > 0) return endRace(false, 'Kratzer! Abgemacht war ohne.');
+  if (rc.sp && rc.sp.trait === 'ramm' && !rc.blk && me < rc.d0 * .7) { rc.blk = 1; crewBlock(rc.sp); }      // Big M's boys block the road somewhere ahead
+  if ((!rc.gates || rc.gi === rc.gates.length - 1) && hyp(PL.x - rc.fin.x, PL.y - rc.fin.y) < 10) return endRace(true);
+  const oEnd = rc.gates ? rc.gates[rc.gates.length - 1] : rc.fin;
+  if ((!rc.gates || o.gi === rc.gates.length - 1) && hyp(o.x - oEnd.x, o.y - oEnd.y) < 8) return endRace(false, rc.who + ' war zuerst da.');
+  if (rc.t > Math.max(240, rc.d0 / 6)) endRace(false, 'Das hat zu lange gedauert.');
 }
 function endRace(win, msg, silent) {
   const rc = G.race; if (!rc) return; G.race = null; rmMarker(rc.fin); rc.opp.kill(); G.freeze = 0; G.routeT = 0; G.raceT = rnd(70, 120); setTask('');
@@ -5899,11 +6095,11 @@ function endRace(win, msg, silent) {
   if (rc.sp) {
     const sp = rc.sp;
     if (win) { sfx('good'); pop('GEWONNEN', 'plus'); P.sp[sp.id] = 1; P.wins++; G.stats.raceWin++; jobDone('sp', 0); talk(sp.ch, sp.win, () => { sp.give(); toast('Gewonnen: ' + sp.prize + '.', 'good'); if (!sp.base) revBossRace(sp.ch); saveGame(); }); }
-    else { sfx('bad'); laufEnd('Rennen verloren.'); talk(sp.ch, sp.lose); }                 // one try a night: the marker is back tomorrow
+    else { sfx('bad'); laufEnd('Rennen verloren.'); talk(sp.ch, [sp.lose, rc.mate0 < rc.mateMax && rc.rule !== 'noturbo' ? mateTip(rc) : pick(['Kleiner Tipp: Fahr mal in die Garage und schraub an deiner Karre. Motor, Reifen, Turbo-Mate. So gewinnst du gegen mich nie.', 'Weißte, woran’s liegt? An der Kiste. Ab in die Garage, Tuning, dann reden wir weiter.', 'Mit dem Serienmotor? Echt jetzt? Geh mal in die Garage, bevor du wiederkommst.'])]); }                 // one try a night: the marker is back tomorrow
     return;
   }
   if (win) { P.wins++; G.stats.raceWin++; G.stats.raceEur += rc.stake; earn(rc.stake * 2, 'Rennen gewonnen!'); jobDone('race', rc.stake); revRacer(rc.R); pop('GEWONNEN', 'plus'); say(rc.opp.x, rc.opp.y, pick(['Glück jehabt!', 'Revanche!', 'Nich schlecht, Taxi.'])); }
-  else { G.stats.raceEur -= rc.stake; sfx('bad'); laufEnd('Rennen verloren.'); toast((msg || 'Verloren.') + (rc.stake ? ' ' + eur0(rc.stake) + ' Einsatz weg.' : ''), 'bad'); }
+  else { G.stats.raceEur -= rc.stake; sfx('bad'); laufEnd('Rennen verloren.'); toast((msg || 'Verloren.') + (rc.stake ? ' ' + eur0(rc.stake) + ' Einsatz weg.' : ''), 'bad'); if (rc.mate0 < rc.mateMax) { say(PL.x, PL.y, '„Mit halbleerem Becherhalter? Na dann.“'); setTimeout(() => toast('Tipp: ' + mateTip(rc)), 2500); } else { say(PL.x, PL.y, pick(['„Schraub mal an deiner Karre, Alter. Garage, Tuning.“', '„Mit der Kiste? Ab in die Garage!“'])); setTimeout(() => toast('Tipp: In der Garage unter „Tuning“ wird dein Auto schneller und griffiger.'), 2500); } }
 }
 
 /* ---------- the bank job: a lot of money, five stars at once, and the loot only counts once you have shaken them off ---------- */
@@ -5964,7 +6160,7 @@ function storyStart() {
   if (!P.seen.kalle && !G.admin) { P.seen.kalle = 1; setTimeout(() => sms('Kalle', 'Streifen siehst du am blauen Fächer vor dem Auto. Da drin unter 70 bleiben und brav sein, dann lassen sie dich in Ruhe. Die Zivilen fahren ohne Fächer.', 'kalle'), 15000); }
   // special opponents wait at their corner until you have beaten them
   let fresh = null;
-  for (const sp of SPECIAL) { if (P.sp[sp.id] || P.night < sp.night || (sp.id === 'dj' && GAR.radio.dj)) continue; raceMark(sp); if (!P.seen['sp' + sp.id]) fresh = sp; }
+  for (const sp of SPECIAL) { if (P.sp[sp.id] || P.night < sp.night || (sp.id === 'dj' && GAR.radio.dj) || (sp.need && !sp.need())) continue; /* Lars only turns up once the cup holder is maxed out */ raceMark(sp); if (!P.seen['sp' + sp.id]) fresh = sp; }
   if (unl('rennen')) for (const sp of REMATCH) { if (P.sp[sp.id] || !(P.sp[sp.base] || (sp.base === 'dj' && GAR.radio.dj)) || P.night < sp.night) continue; raceMark(sp); if (!P.seen['sp' + sp.id]) fresh = sp; }
   if (fresh && !G.admin) { P.seen['sp' + fresh.id] = 1; setTimeout(() => { if (G.mode !== 'title') sms(fresh.call[0], fresh.call[1]); }, 7000); }
 }
@@ -5975,6 +6171,31 @@ function updStory(dt) {
   for (const m of MK) if (m.type === 'race' && m.life !== undefined) { m.life -= dt; if (m.life <= 0 && hyp(m.x - PL.x, m.y - PL.y) > 40) { rmMarker(m); break; } }
   G.raceT -= dt;
   if (G.raceT <= 0) { G.raceT = rnd(70, 120); if (unl('rennen') && !G.heat && !MK.some(m => m.type === 'race' && !m.ref.sp)) newChallenge(); }
+}
+
+/* ---------- the end of the taxi job: once you buy by the crate, Kalle hears about it and takes the licence back ---------- */
+function taxiQuit() {
+  if (taxiOff()) return; P.seen.taxiEnd = 1;
+  G.hails.slice().forEach(dropHail); if (RIV.on) { RIV.on = false; RIV.g.visible = false; }
+  if (GAR.cur === 'taxi') buildPlayerCar();                       // the roof sign comes off
+  const tx = id => id === 'fares' || id === 'tips' || id === 'ram';      // tonight's taxi goals are swapped for others
+  for (const it of G.goals) if (!it.done && tx(it.g.id)) { const pool = GOALPOOL.filter(g => !tx(g.id) && !G.goals.some(o => o.g === g)); if (pool.length) it.g = pick(pool); }
+  renderGoals();
+  sms('Kalle · Taxizentrale', 'Ick hab jehört, wat du nebenbei so treibst. Kistenweise, wa? Gib den Taxischein ab, so eener fährt nich für mich. Dein letzter Fahrgast is noch deiner, danach is Schluss. Mach’s jut.', 'bad');
+  banner('Taxischein weg', 'Kein Taxi mehr', 'Ab jetzt nur noch das Geschäft: Lieferungen, Lager, Läufer, Reviere', 'rank'); saveGame();
+}
+
+/* Big M's boys: parked across the road on your route, about 150 to 220 m ahead. Like a police block, but black, and no police */
+function crewBlock(sp) {
+  const R = G.rt.nav; if (!R || !R.pts || R.pts.length < 2) return;
+  let acc = 0, at = null; for (let i = 1; i < R.pts.length; i++) { const a = R.pts[i - 1], b = R.pts[i], d = hyp(b[0] - a[0], b[1] - a[1]); if (acc + d > 170) { const f = (170 - acc) / (d || 1); at = [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f]; break; } acc += d; }
+  if (!at) return; const ns = nearestSeg(at[0], at[1], true, 0); if (!ns) return; const s = ns.seg, t = clamp((at[0] - s.ax) * s.dx + (at[1] - s.ay) * s.dy, 0, s.len), px = s.ax + s.dx * t, py = s.ay + s.dy * t;
+  const n = Math.max(2, Math.ceil(s.st.w * 2 / 5.2)), cars = [], ang = Math.atan2(s.dy, s.dx) + Math.PI / 2;
+  for (let i = 0; i < n - 1; i++) {                       // one car short of a full wall: there is always a gap to find
+    const lat = -s.st.w + (i + .5) * (2 * s.st.w / n) + (i % 2 ? 1.2 : 0), x = px + s.dy * lat, y = py - s.dx * lat, m = carModel(0, sp.col || 0x121216, false);
+    place(m, x, y, ang + (i % 2 ? .14 : -.14)); cars.push({ x, y, a: ang, m, gone: false });
+  }
+  RB.push({ x: px, y: py, cars, until: G.t + 60, crew: true }); toast(sp.who + 's Jungs stehen quer auf der Strecke! Lücke suchen oder durch.', 'bad'); sfx('heat');
 }
 
 /* ================= city details: shop fronts, playgrounds, back yards, things you can shove around =================
@@ -6618,20 +6839,20 @@ function jobDone(kind, base, big) {
 
 /* ---------- one task a day: the same for everybody, new at midnight, nothing lost if you skip it ---------- */
 const DAILY = [
-  { t: '8 Fahrgäste in einer Nacht befördern', n: 8, v: () => G.stats.fares },
+  { t: '8 Fahrgäste in einer Nacht befördern', n: 8, v: () => G.stats.fares, taxi: 1 },
   { t: '6 Lieferungen in einer Nacht abschließen', n: 6, v: () => G.stats.deliv },
   { t: '40 Pfandflaschen in einer Nacht sammeln', n: 40, v: () => G.stats.pfand },
   { t: '600 € Gewinn in einer Nacht einfahren', n: 600, v: () => Math.floor(G.money - G.startMoney) },
   { t: 'Einen Drift 5 Sekunden halten', n: 5, v: () => Math.floor(G.stats.longDrift) },
-  { t: '50 € Trinkgeld in einer Nacht kassieren', n: 50, v: () => Math.floor(G.stats.tips) },
+  { t: '50 € Trinkgeld in einer Nacht kassieren', n: 50, v: () => Math.floor(G.stats.tips), taxi: 1 },
   { t: 'Ein Rennen gewinnen', n: 1, v: () => G.stats.raceWin, u: 'rennen' },
   { t: '2 Stunden am Stück ohne Kratzer fahren', n: 120, v: () => Math.floor(G.cleanBest) },
-  { t: '4 Uber in einer Nacht rammen', n: 4, v: () => G.stats.rammed },
+  { t: '4 Uber in einer Nacht rammen', n: 4, v: () => G.stats.rammed, taxi: 1 },
   { t: '7 Kilometer in einer Nacht fahren', n: 7, v: () => Math.floor(G.stats.km) },
 ];
 const DAY_EUR = 100, DAY_XP = 60;
 const dayKey = () => { const d = new Date(); return String(d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate()); };
-const dayJob = () => { const L = DAILY.filter(j => !j.u || unl(j.u)); return L[(Math.imul(+dayKey(), 2654435761) >>> 0) % L.length]; };   // only tasks you can already do
+const dayJob = () => { const L = DAILY.filter(j => (!j.u || unl(j.u)) && !(j.taxi && taxiOff())); return L[(Math.imul(+dayKey(), 2654435761) >>> 0) % L.length]; };   // only tasks you can already do
 const dayOpen = () => careerVis() && P.tut >= 2 && P.day !== dayKey();
 function dayTick() {
   if (!dayOpen() || !G.live || G.tutor) return; const j = dayJob(); if (j.v() < j.n) return;
@@ -6657,7 +6878,7 @@ const VIPS = [
 ];
 let VIPMAT = null;
 function vipLook(m) { if (!VIPMAT) VIPMAT = _mkmat.hail.map(x => { const c = x.clone(); c.color.set(0xffffff); return c; }); m.ring.material = VIPMAT[0]; m.g.children[1].material = VIPMAT[1]; }      // a white pillar instead of the yellow one
-const vipRoll = () => !G.tutor && unl('lauf') && !G.hails.some(h => h.vip) && Math.random() < (G.vipSoon ? 1 : .08);
+const vipRoll = () => !G.tutor && unl('lauf') && Math.random() < (G.vipSoon ? 1 : .125);
 
 /* ---------- the night begins and ends ---------- */
 function careerStart() {
@@ -6861,7 +7082,7 @@ function revRunner(r, ref, i) {                     // two runners of theirs per
   for (let k = 0; k < 40; k++) {
     const s = spotNear(rnd(B[0] + 60, B[2] - 60), rnd(B[1] + 60, B[3] - 60));
     if (revAt(s.x, s.y) !== r || hyp(s.x - PL.x, s.y - PL.y) < 140 || MK.some(m => hyp(m.x - s.x, m.y - s.y) < (m.type === 'runner' ? 420 : 45))) continue;
-    ref = ref || { r, crew: r.crew, css: hex6(cr.col), name: r.runs[i || 0] }; ref.gone = false; ref.n = (ref.n || 0) + 1; ref.loot = 1 + (Math.random() * 2 | 0); ref.cash = Math.round(rnd(30, 95) / 5) * 5;
+    ref = ref || { r, crew: r.crew, name: r.runs[i || 0] };      // runners are always red: which crew they belong to follows from the territory ref.gone = false; ref.n = (ref.n || 0) + 1; ref.loot = 1 + (Math.random() * 2 | 0); ref.cash = Math.round(rnd(30, 95) / 5) * 5;
     ref.fig = revFig(cr.col); ref.fig.g.position.set(s.px, 0, -s.py); ref.mk = mkMarker('runner', s, ref, 4.2); if (!G.rev.runners.includes(ref)) G.rev.runners.push(ref); return ref;
   }
   return null;
@@ -7147,8 +7368,8 @@ const NEWS = {
     'Für jeden Auftrag, jedes Ziel und jede Straße, die du zum ersten Mal fährst, gibt es Respekt. Mit genug Respekt steigst du im Rang auf: Prämie, und jede Fahrt bringt mehr.',
     'Dazu gibt es jeden Tag einen Tagesauftrag mit ' + 200 + ' € extra.'] },
   lauf: { t: 'VIPs', l: [
-    'Ab und zu wartet ein VIP an einer weißen Säule. Er zahlt das Zweieinhalbfache, wartet aber nicht lange.',
-    'Die Zentrale schickt dir eine SMS, sobald einer wartet. Auf der Karte ist sein Punkt weiß.'] },
+    'Manche Fahrgäste sind Promis. Das siehst du ihnen vorher nicht an, sie stehen an derselben gelben Säule.',
+    'Erst wenn du anhältst, merkst du es: Sie zahlen das Zweieinhalbfache.'] },
   rennen: { t: 'Rennen', l: [
     'Rote Säulen auf der Karte sind Herausforderer. Fahr hin, halt an und nimm das Rennen an.',
     'Ihr startet nebeneinander. Wer zuerst im Ziel ist, gewinnt. Bei Straßenrennen verdoppelt sich der Einsatz.',
@@ -7223,6 +7444,7 @@ function guideEnd() {
   IQ.length = 0; IQ.cur = null; $('info').hidden = true;
 }
 function guideStart() {
+  if (P && P.sp && P.sp.bigm && !P.seen.taxiEnd) setTimeout(() => { if (G.live) taxiQuit(); }, 6000);      // older saves that beat Big M before this existed
   IQ.length = 0; G.goalT = 0; $('info').hidden = true; favStart(); mjStart();
   if (G.tutor || !P || G.admin) return;
   for (const k in UNL) if (P.night === UNL[k] && !P.seen['u' + k]) newsCard(k);
@@ -7250,7 +7472,7 @@ const cash = () => G.live ? G.money : P.money;
 const CHAP = [
   { id: 'n1', n: 'Die erste Nacht überstehen', u: 'taxi', eur: 20, done: () => P.night >= 1, how: () => 'Fahrgäste und Päckchen · um 6 Uhr ist Feierabend' },
   { id: 'rang', n: 'Rang Aushilfe erreichen', u: 'ziele', eur: 50, done: () => rankOf(P.xp) >= 1, how: () => 'Noch ' + Math.max(0, RANKS[1][1] - P.xp) + ' Respekt: Aufträge, Schichtziele, neue Straßen' },
-  { id: 'vip', n: 'Einen VIP ans Ziel bringen', u: 'lauf', eur: 70, done: () => lifeOf('vip') >= 1, how: () => 'Weiße Säule: Die Zentrale meldet per SMS, wenn ein VIP wartet' },
+  { id: 'vip', n: 'Einen VIP ans Ziel bringen', u: 'lauf', eur: 70, done: () => lifeOf('vip') >= 1, how: () => 'Etwa jeder achte Fahrgast ist ein Promi, das merkst du erst beim Anhalten' },
   { id: 'race', n: 'Ein Rennen gewinnen', u: 'rennen', eur: 100, done: () => P.wins >= 1, how: () => 'Rote Säulen auf der Karte sind Herausforderer' },
   { id: 'rv1', n: 'Das erste Revier übernehmen', u: 'rev', eur: 250, done: () => revCount() >= 2, how: () => { const r = nextRev(); return r ? r.n + ': ' + revHow(r) : ''; } },
   { id: 'bank', n: 'Eine Sparkasse ausnehmen', u: 'bank', eur: 150, done: () => lifeOf('heists') >= 1, how: () => 'Goldene Säule, danach alle Sterne abschütteln' },
@@ -7609,6 +7831,7 @@ function pollPad(dt) {
     } else if (G.mode === 'talk') {
       if (hit('a') || hit('b')) talkNext();
     } else if (G.mode === 'los' && !over) {
+      padScratch(lx || rx, ly || ry, dt);
       if (hit('a')) { if (LOS.cur && LOS.cur.done) closeLos(); else revealLos(); }
       else if (hit('b')) closeLos();
     } else {
@@ -7659,6 +7882,19 @@ function initTouch() {
     const up = e => { e.preventDefault(); b.classList.remove('on'); if (k === 'gas') TCH.gas = false; else if (k === 'brake') TCH.brk = false; };
     b.addEventListener('pointerdown', dn); b.addEventListener('pointerup', up); b.addEventListener('pointercancel', up); b.addEventListener('pointerleave', up);
   }
+}
+
+/* scratch cards on the controller: a coin moves with the stick, wiggle it back and forth to scratch */
+function padScratch(x, y, dt) {
+  const L = LOS.cur, el = $('los-coin'); if (!L || !el) return;
+  if (L.done) { el.hidden = true; return; }
+  if (LOS.cx == null || LOS.card !== L) { LOS.card = L; LOS.cx = 240; LOS.cy = 150; }
+  el.hidden = false;
+  const m = hyp(x, y); if (m > .12) {
+    const sp = 700 + 500 * m, nx = clamp(LOS.cx + x * sp * dt, 10, 470), ny = clamp(LOS.cy + y * sp * dt, 10, 290);
+    losScratch(LOS.cx, LOS.cy, nx, ny); LOS.cx = nx; LOS.cy = ny;
+  }
+  el.style.left = (LOS.cx / 4.8) + '%'; el.style.top = (LOS.cy / 3) + '%';
 }
 
 </script>
