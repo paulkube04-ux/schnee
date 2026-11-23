@@ -588,7 +588,7 @@ body.spar * { backdrop-filter: none !important; -webkit-backdrop-filter: none !i
     <div class="bar"><b id="dmg"></b></div>
     <div id="watch" hidden><div class="lab">Im Blick der Streife</div><div class="bar"><b id="att"></b></div></div>
     <div id="kit" class="inv"><span class="lab">Werkzeug</span><span id="kit-c"></span><kbd data-act="kit">F</kbd></div>
-    <div id="mate"><span class="lab">Mate-Turbo</span><span id="mate-c"></span><kbd data-act="turbo">T</kbd><div class="bar"><b id="turbo-bar"></b></div></div>
+    <div id="mate"><span class="lab">Turbo-Mate</span><span id="mate-c"></span><kbd data-act="turbo">T</kbd><div class="bar"><b id="turbo-bar"></b></div></div>
     <div class="lab gl">Schichtziele</div>
     <div id="goals"></div>
   </div>
@@ -3340,7 +3340,7 @@ function dlgSpaeti(s) {
   dialog({
     kind: 'spaeti', tag: 'Mate', title: s.name, text: '„Na, Meister? Wat brauchste?“', meta: 'Kasse: ' + eur(G.money), re: () => dlgSpaeti(s),
     opts: [
-      { label: 'Kiez-Mate', sub: '6 € · Turbo zum Mitnehmen · ' + G.mate + '/' + G.mateMax + ' dabei', dis: G.money < 6 || G.mate >= G.mateMax, stay: 1, fn: () => { pay(6, 'shop'); G.mate++; sfx('good'); toast('Mate eingepackt (' + G.mate + '/' + G.mateMax + '). ' + hint('turbo') + ' zündet den Turbo.', 'good'); } },
+      { label: 'Turbo-Mate', sub: '6 € · Turbo zum Mitnehmen · ' + G.mate + '/' + G.mateMax + ' dabei', dis: G.money < 6 || G.mate >= G.mateMax, stay: 1, fn: () => { pay(6, 'shop'); G.mate++; sfx('good'); toast('Mate eingepackt (' + G.mate + '/' + G.mateMax + '). ' + hint('turbo') + ' zündet den Turbo.', 'good'); } },
       { label: 'Rubbellos „Kiez-Kracher“', sub: tb ? later : '5 € · bis 10.000 € · noch ' + losLeft(s, 'k'), dis: tb || G.money < 5 || losLeft(s, 'k') <= 0, fn: () => buyLos(s, 'k') },
       { label: 'Goldlos „Goldene Currywurst“', sub: tb ? later : '20 € · Jackpot 100.000 € · noch ' + losLeft(s, 'g'), dis: tb || G.money < 20 || losLeft(s, 'g') <= 0, fn: () => buyLos(s, 'g') },
       { label: 'Pils fürs Handschuhfach', sub: tb ? later : '1,50 €, erst nach Feierabend', dis: tb || G.money < 1.5, stay: 1, fn: () => { pay(1.5, 'shop'); G.stats.sterni++; toast('Liegt im Handschuhfach. Nicht während der Fahrt.'); } },
@@ -4373,9 +4373,26 @@ function updChase(dt) {
   CAM.yaw += angDiff(PL.a, CAM.yaw) * Math.min(1, dt * 4.2); CAM.x = PL.x; CAM.y = PL.y;
   const fv = 58 + 9 * smooth(8, 32, PL.speed()) + (G.turbo > 0 ? 10 : 0); if (Math.abs(fv - CAM.fov) > .2) { CAM.fov += (fv - CAM.fov) * Math.min(1, dt * 2); camera.fov = CAM.fov; camera.updateProjectionMatrix(); }
   const [sx, sy] = camShake(dt, .5), ya = CAM.yaw + CAM.oy, el = clamp(.36 + CAM.op, .1, 1.25), R = (12.5 + PL.speed() * .1) * CAM.uz, cx = Math.cos(ya), cy = Math.sin(ya), ce = Math.cos(el);
-  camera.position.set(PL.x - cx * R * ce + sx, 1.4 + R * Math.sin(el) + sy, -(PL.y - cy * R * ce));
+  // a wall between the car and the camera: the camera moves in front of it instead of ending up inside the house
+  const want = R * ce, hit = camRay(PL.x, PL.y, -cx, -cy, want + .8), d = hit < want + .8 ? Math.max(2.2, hit - .9) : want;
+  CAM.cd = d < (CAM.cd || want) ? d : (CAM.cd || want) + (d - (CAM.cd || want)) * Math.min(1, dt * 3);
+  camera.position.set(PL.x - cx * CAM.cd + sx, 1.4 + R * Math.sin(el) + sy, -(PL.y - cy * CAM.cd));
   camera.lookAt(PL.x + cx * 7, 1.3, -(PL.y + cy * 7));
   moonAt(PL.x + cx * 50, PL.y + cy * 50);
+}
+/* how far a ray from (x, y) gets before it meets a wall; fences and hedges do not count */
+function camRay(x, y, dx, dy, L) {
+  let best = L; const seen = new Set();
+  for (let t = 0; t <= L + EC; t += EC * .5) {
+    const k = hkey(Math.floor((x + dx * t) / EC), Math.floor((y + dy * t) / EC)), arr = W.ehash.get(k); if (!arr) continue;
+    for (const e of arr) {
+      if (seen.has(e) || W.efn[e]) continue; seen.add(e); const o = e * 4, ax = W.ex[o], ay = W.ex[o + 1], ex = W.ex[o + 2] - ax, ey = W.ex[o + 3] - ay;
+      const den = dx * ey - dy * ex; if (Math.abs(den) < 1e-9) continue;
+      const u = ((ax - x) * ey - (ay - y) * ex) / den, v = ((ax - x) * dy - (ay - y) * dx) / den;
+      if (u > 0 && u < best && v >= 0 && v <= 1) best = u;
+    }
+  }
+  return best;
 }
 function updCamera(dt, tx, ty, title) {
   if (CAM.pov && !title) { updPov(dt); return; }
@@ -5617,7 +5634,7 @@ const TUT = [
   { t: 'Ausliefern', s: () => 'Der blauen Linie folgen, in der Säule halten, übergeben', mk: ['order'],
     tick: () => { if (!G.orders.length && !G.stats.deliv) tutGo(4, true); },
     ok: () => G.stats.deliv >= 1 },
-  { t: 'Mate holen', s: () => 'Irgendwo eine Kiez-Mate holen (grüne Säule)', mk: ['spaeti'], nav: () => nearestOf(POI.spaeti).mk,
+  { t: 'Mate holen', s: () => 'Irgendwo eine Turbo-Mate holen (grüne Säule)', mk: ['spaeti'], nav: () => nearestOf(POI.spaeti).mk,
     on: () => { P.seen.kalle = 1; if (G.money < 8) earn(10); talk('kalle', ['Läuft. Jetzt dit Wichtige: die Polizei. Streifen erkennste am blauen Fächer vor dem Auto. Da drin unter 70 bleiben und brav sein, dann lassen se dich in Ruhe.', 'Die Zivilen fahren normale Karren ohne Fächer. Der Polizeifunk aus der Garage zeigt dir ooch die. Und wenn se dich doch jagen: abhängen, bis die Sterne oben rechts weg sind.', 'Noch ’n Tipp: Hol dir irgendwo ’ne Mate, Späti, Kneipe, Supermarkt, egal. Grüne Säule. Wirste gleich brauchen.']); },
     ok: () => G.mate >= 1 || G.usedTurbo },
   { t: 'Turbo zünden', s: () => hint('turbo') + ' trinkt die Mate: sechs Sekunden Vollgas, und was im Weg steht, fliegt zur Seite', mk: [],
@@ -7273,7 +7290,7 @@ const HELP = [
   { u: 'taxi', t: 'Taxi', l: () => ['Gelbe Säule: Fahrgast. Reinfahren und anhalten, dann geht das Fenster auf.', 'Die gelbe Linie führt zum Ziel. Wer schnell und ohne Kratzer ankommt, bekommt Trinkgeld.', 'Am Ende jeder Nacht zeigt der Bon, was übrig bleibt.'] },
   { u: 'taxi', t: 'Päckchen und Mischa', l: () => ['Ware gibt es an den Tickern (lila Säulen). Bestellungen kommen aufs Handy, ' + hint('yes') + ' nimmt an.', 'Blaue Säule: Kunde. Reinfahren, anhalten, übergeben. Zu spät zahlt weniger.', 'Auf K kaufen geht, aber Mischa will sein Geld bis zur genannten Uhrzeit. Sonst schickt er sein Inkasso.'] },
   { u: 'taxi', t: 'Polizei und Bußgelder', l: () => ['Streifen haben einen blauen Fächer vor dem Auto. Darin unter 70 bleiben und nichts anstellen.', 'Jagen sie dich, zeigen die Sterne oben rechts die Fahndung. Abhängen, bis alle Sterne weg sind.', 'Rote Ampeln und Blitzer kosten Bußgeld. Ab dem vierten Verstoß in einer Nacht gibt jeder weitere einen Stern.'] },
-  { u: 'taxi', t: 'Mate, Werkstatt, Garage', l: () => ['Grüne Säule: Spätis, Kneipen und Supermärkte, die Kiez-Mate haben. ' + hint('turbo') + ' trinkt sie: sechs Sekunden Turbo.', 'Werkstatt (orange Säule): repariert die Karre und verkauft Werkzeugkoffer. Mit ' + hint('kit') + ' flickst du unterwegs.', 'Nach jeder Nacht geht es in die Garage: Autos, Tuning, Lack, Hupen, Dachschmuck.'] },
+  { u: 'taxi', t: 'Mate, Werkstatt, Garage', l: () => ['Grüne Säule: Spätis, Kneipen und Supermärkte, die Turbo-Mate haben. ' + hint('turbo') + ' trinkt sie: sechs Sekunden Turbo.', 'Werkstatt (orange Säule): repariert die Karre und verkauft Werkzeugkoffer. Mit ' + hint('kit') + ' flickst du unterwegs.', 'Nach jeder Nacht geht es in die Garage: Autos, Tuning, Lack, Hupen, Dachschmuck.'] },
   { u: 'ziele', t: 'Ziele und Respekt', l: () => NEWS.ziele.l },
   { u: 'lauf', t: 'VIPs', l: () => NEWS.lauf.l },
   { u: 'rennen', t: 'Rennen', l: () => NEWS.rennen.l },
