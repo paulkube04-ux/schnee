@@ -3362,7 +3362,7 @@ function answerOffer(yes, timeout) {
 }
 /* where to restock on the way: every ticker, and every warehouse of yours that holds enough; the one with the shortest trip overall wins */
 function bestSource(ord, miss) {
-  const list = POI.depot.slice(); for (const l of POI.lager) { const L = P.lager[l.id]; if (L && L.stock >= Math.max(1, miss || 1)) list.push(l); }
+  const list = tickOff() ? [] : POI.depot.slice(); for (const l of POI.lager) { const L = P.lager[l.id]; if (L && L.stock >= Math.max(1, miss || 1)) list.push(l); }
   let best = null;
   for (const c of list) { const r1 = routeBetween(PL.x, PL.y, c.x, c.y), r2 = routeBetween(c.x, c.y, ord.spot.x, ord.spot.y); if (!r1 || !r2) continue; const tot = r1.dist + r2.dist; if (!best || tot < best.tot) best = { s: c, tot }; }
   return best;
@@ -3571,7 +3571,7 @@ function setCam(mode, quiet) {
 }
 function camCycle() { setCam((CAM.mode + 1) % 4); }
 function togglePov() { setCam(CAM.mode === 0 ? (CAM.last || 2) : 0); }
-function cycleGps() { if (tutBusy()) { toast('In der ersten Nacht stellt Kalle das Navi ein.'); return; } G.gpsMode = (G.gpsMode + 1) % 4; G.gpsPick = null; G.routeT = 0; toast('Navi: ' + ['aus (nur Aufträge)', 'nächster Ticker', 'nächste Werkstatt', 'nächste Mate'][G.gpsMode]); }
+function cycleGps() { if (tutBusy()) { toast('In der ersten Nacht stellt Kalle das Navi ein.'); return; } G.gpsMode = (G.gpsMode + 1) % 4; G.gpsPick = null; G.routeT = 0; toast('Navi: ' + ['aus (nur Aufträge)', tickOff() ? 'nächstes eigenes Lager' : 'nächster Ticker', 'nächste Werkstatt', 'nächste Mate'][G.gpsMode]); }
 
 /* ---------- cancel whatever you are on ---------- */
 function dlgCancel() {
@@ -3583,7 +3583,7 @@ function dlgCancel() {
   } });
   if (G.race) opts.push({ label: 'Rennen aufgeben', sub: G.race.stake ? 'Einsatz weg: ' + eur0(G.race.stake) : 'zählt als verloren', fn: () => endRace(false, 'Aufgegeben.') });
   for (const o of G.orders) opts.push({ label: 'Lieferung absagen: ' + o.spot.name, sub: o.qty + ' Päckchen bleiben im Kofferraum, Mischa ist sauer', fn: () => { dropOrder(o); laufEnd('Lieferung abgesagt.'); repChange(-6, 'Abgesagt? Meine Kunden sagt man nich ab.'); sms(o.cust.n, 'Abgesagt?! Dann eben nicht.', 'bad'); G.nextOffer = Math.max(G.nextOffer, 20); } });
-  if ((G.gpsPick || G.gpsMode) && !tutBusy()) opts.push({ label: 'Navi-Ziel löschen', sub: G.gpsPick ? mkLabel(G.gpsPick) : ['', 'Ticker', 'Werkstatt', 'Mate'][G.gpsMode], fn: () => { if (G.gpsPick && G.gpsPick.type === 'pin') rmMarker(G.gpsPick); G.gpsPick = null; G.gpsMode = 0; G.routeT = 0; } });
+  if ((G.gpsPick || G.gpsMode) && !tutBusy()) opts.push({ label: 'Navi-Ziel löschen', sub: G.gpsPick ? mkLabel(G.gpsPick) : ['', tickOff() ? 'Lager' : 'Ticker', 'Werkstatt', 'Mate'][G.gpsMode], fn: () => { if (G.gpsPick && G.gpsPick.type === 'pin') rmMarker(G.gpsPick); G.gpsPick = null; G.gpsMode = 0; G.routeT = 0; } });
   if (G.offer) opts.push({ label: 'Angebot auf dem Handy ablehnen', fn: () => answerOffer(false) });
   if (!opts.length) { toast('Du hast gerade keinen Auftrag.'); return; }
   if (opts.length > 2) opts.push({ label: 'Alles abbrechen', fn: () => { for (const o of opts.slice(0, -1)) o.fn(); } });
@@ -4131,7 +4131,7 @@ function navTargets() {
   if (G.gpsPick && G.gpsPick.type !== 'hail' && G.gpsPick.type !== 'order' && hyp(G.gpsPick.x - PL.x, G.gpsPick.y - PL.y) < 9) { if (G.gpsPick.type === 'pin') rmMarker(G.gpsPick); G.gpsPick = null; G.routeT = 0; }
   if (G.gpsPick) nav = G.gpsPick;
   else if (G.gpsMode) {
-    const list = [null, POI.depot, POI.werk, POI.spaeti][G.gpsMode]; nav = list.slice().sort((a, b) => hyp(a.x - PL.x, a.y - PL.y) - hyp(b.x - PL.x, b.y - PL.y))[0].mk;
+    const own = POI.lager.filter(l => P.lager[l.id]), list = [null, tickOff() && own.length ? own : POI.depot, POI.werk, POI.spaeti][G.gpsMode]; nav = list.slice().sort((a, b) => hyp(a.x - PL.x, a.y - PL.y) - hyp(b.x - PL.x, b.y - PL.y))[0].mk;
     if (hyp(nav.x - PL.x, nav.y - PL.y) < 12) { G.gpsMode = 0; nav = null; G.routeT = 0; toast('Angekommen. Navi aus.'); }      // there: the line goes, as it does for a map pick
   }
   let taxi = G.fare ? G.fare.mk : null, snow = null; G.actOrd = null; G.viaSrc = null;
@@ -4483,7 +4483,7 @@ function hud() {
       (o.late ? 'Zu spät, 30 % Abzug' : (t / 60 | 0) + ':' + pad2(t % 60)) + ' · ' + m10(rt.snow && rt.snow.d) + (lack && !G.viaSrc ? ' · zu wenig Ware dabei' : '') + (G.orders.length > 1 ? ' · +' + (G.orders.length - 1) + ' weitere' : ''), o.late ? 0 : clamp(o.t / 90, 0, 1));
   } else jobRow('job-snow', '');
   if (G.race) jobRow('job-nav', '');                                    // the banner at the top shows the race
-  else jobRow('job-nav', nv ? 'Navi: ' + (G.gpsPick ? mkLabel(nv) : ['', 'Ticker', 'Werkstatt', 'Mate'][G.gpsMode]) : '', nv ? m10(rt.nav && rt.nav.d) : '', -1);
+  else jobRow('job-nav', nv ? 'Navi: ' + (G.gpsPick ? mkLabel(nv) : ['', tickOff() ? 'Lager' : 'Ticker', 'Werkstatt', 'Mate'][G.gpsMode]) : '', nv ? m10(rt.nav && rt.nav.d) : '', -1);
   if (nv && !G.race) $('job-nav').style.setProperty('--jc', MKCSS[nv.type] || '#b56bff');      // the stripe takes the colour of where you are headed, like the line on the road
   $('job-nav').classList.toggle('race', !!G.race); $('job-x').hidden = !(f || o || nv || G.race);
   // pointers at the screen edge, one per target that is out of view
@@ -5591,18 +5591,24 @@ function initBiz(mk) {
 }
 /* which markers are on the map tonight */
 const bizShow = () => bizMarks();
+/* once you buy your first warehouse you deal with Big M: Mischa's tickers are closed to you and vanish */
+const tickOff = () => !!P && !G.admin && lagerOwn().length > 0;
+/* a warehouse can only be bought in a territory that is yours (Helmholtzkiez always is) */
+const lagerRevOk = l => { if (G.admin) return true; const r = typeof revById === 'function' ? revById(l.id) : null; return !r || revMine(r); };
 function bizMarks() {
   const open = lagerOpen() && !G.tutor;
-  for (const l of POI.lager) mkShow(l.mk, !!P.lager[l.id] || open);
+  for (const l of POI.lager) mkShow(l.mk, !!P.lager[l.id] || (open && lagerRevOk(l)));
+  for (const d of POI.depot) mkShow(d.mk, !tickOff());
   for (const g of POI.gross) mkShow(g.mk, open && !MK.some(m => m.type === 'race' && m.ref.sp && m.ref.sp.id === 'bigm'));
 }
 function bizStart() {
   G.runT = RUN_T; bizMarks();
   if (G.admin || G.tutor) return;
   // while you slept the runners kept selling
-  let n = 0, sum = 0;
-  for (const l of lagerOwn()) { const L = P.lager[l.id]; lagerNames(L).forEach(w => { const k = Math.min(L.stock, rTrait(w)[0] === 'schnell' ? 6 : 4), e = runNet(runDayEur(l) + runBonus(w, l)); if (k > 0) { L.stock -= k; L.cash += k * e; n += k; sum += k * e; } }); }
-  if (n) { setTimeout(() => sms('Läufer', 'Tagsüber ' + n + ' Päckchen vertickt. ' + eur0(sum) + ' liegen in der Lagerkasse, unser Anteil ist schon raus.', 'good'), 5000); saveGame(false); }
+  let n = 0, sum = 0, robbed = 0;
+  for (const l of lagerOwn()) { const L = P.lager[l.id]; const rv = revOn() ? revAt(l.x, l.y) : null, lost = rv && !revMine(rv);          // in a territory you do not hold, about half is robbed during the day
+    lagerNames(L).forEach(w => { const k = Math.min(L.stock, rTrait(w)[0] === 'schnell' ? 6 : 4), e = runNet(runDayEur(l) + runBonus(w, l)), gone = lost ? Math.round(k * (rTrait(w)[0] === 'vorsicht' ? .2 : .5)) : 0; if (k > 0) { L.stock -= k; L.cash += (k - gone) * e; n += k - gone; sum += (k - gone) * e; robbed += gone; } }); }
+  if (n || robbed) { setTimeout(() => sms('Läufer', 'Tagsüber ' + n + ' Päckchen vertickt. ' + eur0(sum) + ' liegen in der Lagerkasse, unser Anteil ist schon raus.' + (robbed ? ' ' + robbed + ' Päckchen sind uns im fremden Revier abgezogen worden.' : ''), robbed ? 'bad' : 'good'), 5000); saveGame(false); }
   const next = null;
   if (next && !P.seen['lg' + next.id]) { P.seen['lg' + next.id] = 1; setTimeout(() => sms('Kalle', lagerOwn().length ? 'Neues Lager frei: ' + next.name + '. Steht auf der Karte.' : 'Wenn du größer einsteigen willst: ' + next.name + ' ist zu haben, ' + eur0(next.price) + '. Blaues Viereck auf der Karte. Mit Lager verkauft dir auch der Großticker.'), 9000); }
 }
@@ -5631,15 +5637,19 @@ function lagerHint() {
 function dlgLager(l) {
   const L = P.lager[l.id], re = () => dlgLager(l); if (L) tipOnce('lager');
   if (!L) {
-    const early = !lagerOpen();
+    const early = !lagerOpen(), noRev = !lagerRevOk(l), rv = typeof revById === 'function' ? revById(l.id) : null;
     dialog({
       kind: 'lager', tag: 'Lager zu haben', title: l.name, re,
       text: '„Trocken, abschließbar, kein Hausmeister. Sie lagern ein, was nicht mehr in den Kofferraum passt, und holen es, wenn Sie es brauchen. Bleibt über Nacht liegen.“',
       meta: 'Platz für ' + LCAP[0] + ' Päckchen, ausbaubar auf ' + LCAP[2] + ' · Kasse: ' + eur(G.money),
       opts: [
-        { label: 'Lager übernehmen', sub: early ? 'erst, wenn du Big M im Rennen geschlagen hast' : eur0(l.price) + ', einmalig', dis: early || G.money < l.price, fn: () => {
+        { label: 'Lager übernehmen', sub: early ? 'erst, wenn du Big M im Rennen geschlagen hast' : noRev ? 'erst, wenn ' + (rv ? 'das ' + rv.n : 'das Revier') + ' dein Revier ist' : eur0(l.price) + ', einmalig', dis: early || noRev || G.money < l.price, fn: () => {
           pay(l.price, 'shop'); P.lager[l.id] = { lv: 1, stock: 0, cash: 0, run: 0 }; sfx('good'); toast('Dein Lager: ' + l.name + '.', 'good'); bizMarks(); saveGame();
-          if (lagerOwn().length === 1) setTimeout(() => sms('Big M', 'Lager jekauft? Jut. Ab jetzt holste bei mir, kistenweise. Prenzlauer Allee 34.'), 3000);
+          if (lagerOwn().length === 1) {                                 // the story turn: from now on Big M, the tickers are closed
+            G.routeT = 0; if (G.gpsMode === 1) G.gpsMode = 0;
+            setTimeout(() => sms('Big M', 'Lager jekauft? Jut. Ab jetzt holste bei mir, kistenweise. Prenzlauer Allee 34.'), 3000);
+            setTimeout(() => { if (G.live) { sms('Onkel Mischa', 'Hab jehört, du kaufst jetzt bei Big M. Dann brauchste meine Ticker ja nich mehr. Die Jungs lassen dich da nich mehr rein. Und deine Schulden zahlste bei Big M, der reicht mir dit weiter.', 'bad'); toast('Die lila Ticker sind für dich zu. Ware gibt’s ab jetzt bei Big M.', 'bad'); } }, 9000);
+          }
           re();
         } },
         { label: 'Lieber nicht', esc: 1, fn: () => { } },
@@ -5695,7 +5705,7 @@ function dlgGross(g, pick) {
   dialog({
     kind: 'gross', tag: 'Big M', title: g.name, re,
     text: '„Kistenweise, keine Fragen. Mein Fahrer stellt’s dir direkt ins Lager. Je mehr, desto billiger.“',
-    meta: 'Lieferung an: ' + l.name + ' (' + L.stock + '/' + lagerCap(l) + ') · Kasse: ' + eur(G.money) + ' · beim Ticker kostet das Päckchen ' + eur0(G.depotPrice), opts
+    meta: 'Lieferung an: ' + l.name + ' (' + L.stock + '/' + lagerCap(l) + ') · Kasse: ' + eur(G.money) + ' · Straßenpreis pro Päckchen: ' + eur0(G.depotPrice), opts
   });
 }
 
@@ -7163,7 +7173,9 @@ function revHit(r, d) {
 }
 function revTake(r) {
   const cr = CREWS[r.crew], n = revCount(), v = 200 * n, who = r.runs[0];
-  P.rvo[r.id] = 1; delete P.rvh[r.id]; delete P.rvw[r.id]; G.money += v; G.stats.karEur += v; G.stats.took++; ups().push(['Revier', r.n]);
+  P.rvo[r.id] = 1; delete P.rvh[r.id]; delete P.rvw[r.id]; G.money += v; bizMarks();
+  { const lg = LAGER.find(l => l.id === r.id); if (lg && !P.lager[lg.id] && lagerOpen()) setTimeout(() => { if (G.live) sms('Big M', r.n + ' jehört jetzt dir. Da is ’n Lager frei: ' + lg.name + ', ' + eur0(lg.price) + '. Steht uff der Karte.'); }, 6000); }
+  G.stats.karEur += v; G.stats.took++; ups().push(['Revier', r.n]);
   banner('Revier übernommen', r.n, '+' + eur0(v) + ' · mehr Anfragen, und deine Läufer sind hier sicher', 'kiez'); addXp(200);
   for (const ref of G.rev.runners) if (ref.r === r && !ref.gone) { rmMarker(ref.mk); revFigOff(ref.fig); ref.gone = true; ref.back = 1e9; }
   if (G.rev.chase && G.rev.chase.rid === r.id) abzEnd(false);
@@ -7180,7 +7192,7 @@ function crewDown(id) {
 function revStory() {
   if (G.admin || !P.seen.rev) return; const n = revCount(), q = G.rev.q;
   if (n >= 3 && !P.seen.chef) { P.seen.chef = 1; q.push(() => talk('mischa', ['Drei von vier Revieren. Ick hab dreißig Jahre für ein Revier jebraucht, und du machst dit in ’n paar Nächten.', 'Ick werd alt, Junge. Meine Datsche in Brandenburg wartet, und die Tomaten ooch.', 'Der Laden jehört ab heute dir. Die Ticker wissen Bescheid: Du kriegst die Ware zum Einkaufspreis. Mach wat draus. Und ruf mal an.'],
-    () => { G.depotPrice = 50; banner('Du bist der Chef', 'Dein Laden', 'Ware beim Ticker ab jetzt für ' + eur0(50) + ' statt ' + eur0(65), 'rank'); addXp(150); saveGame(); })); }
+    () => { G.depotPrice = 50; banner('Du bist der Chef', 'Dein Laden', 'Ware ab jetzt günstiger: Grundpreis ' + eur0(50) + ' statt ' + eur0(65), 'rank'); addXp(150); saveGame(); })); }
   if (n >= REVIERE.length && !P.seen.pate) { P.seen.pate = 1; q.push(() => talk('kalle', ['Zentrale an Wagen sieben … ach, wat red ick. Der janze Prenzlauer Berg jehört dir.', 'Ick sag ab jetzt Chef zu dir. Fährste trotzdem noch Taxi? Die Leute fragen.', 'Rudi hat übrigens wat für dein Dach jebaut. Steht in der Garage. Is ’n bisschen drüber. Passt zu dir.'],
     () => { P.g.tops.pate = 1; P.g.top = 'pate'; G.stats.karEur += 1250; earn(1250, 'Der Kiez gehört dir:'); banner('Pate vom Prenzlauer Berg', 'Alle vier Reviere', 'Die Paten-Krone steht in der Garage auf deinem Dach', 'rank'); addXp(300); buildPlayerCar(); saveGame(); })); }
 }
@@ -7266,6 +7278,7 @@ function revAtkLost() {
   if (!revWob(r)) { P.rvw[r.id] = 1; BIG.dirty = true; toast(r.n + ' wackelt. Verpasst du noch einen Angriff, ist es weg.', 'bad'); sfx('bad'); saveGame(); return; }
   delete P.rvo[r.id]; delete P.rvw[r.id]; P.rvh[r.id] = 60; BIG.dirty = true; sfx('bad'); G.stats.lostRv++;
   toast('Revier verloren: ' + r.n + '. ' + cr.n + (cr.pl ? ' sind' : ' ist') + ' zurück.', 'bad');
+  { const lg = LAGER.find(l => l.id === r.id), L = lg && P.lager[lg.id]; if (L && L.run) setTimeout(() => { if (G.live) sms(lagerNames(L)[0] || 'Läufer', 'Dit ' + r.n + ' is weg. Dit Lager is noch unsers, aber ' + CREWS[A.crew].kurz + ' ziehen uns jetzt ständig ab. Hol dir dit Revier zurück.', 'bad'); }, 4000); }
   const old = G.rev.runners.filter(f => f.r === r); if (old.length) for (const f of old) { f.n = 0; revRunner(r, f); } else { revRunner(r, null, 0); revRunner(r, null, 1); }
   saveGame();
 }
@@ -7299,10 +7312,11 @@ function rTraitTxt(n) {
 function runBonus(n, l) { const [k, rv] = rTrait(n); return k === 'teuer' ? 15 : k === 'kiez' && revAt(l.x, l.y).id === rv ? 25 : 0; }
 function runSale(l, L, who) {
   const r = revOn() ? revAt(l.x, l.y) : null, safe = rTrait(who)[0] === 'vorsicht'; who = who || lagerNames(L)[0] || 'Läufer';
-  if (r && !revMine(r) && Math.random() < (safe ? .05 : .14)) { const v = Math.min(L.cash, RUN_EUR); L.cash -= v; sms(who, 'Bin abgezogen worden. Das Päckchen ist weg' + (v ? ', ' + eur0(v) + ' aus der Kasse auch' : '') + '. ' + r.n + ' ist eben noch fremdes Revier.', 'bad'); return; }
+  if (r && !revMine(r) && Math.random() < (safe ? .2 : .45)) {          // a warehouse in a territory you lost: the crew robs your runners all the time
+  const v = Math.min(L.cash, RUN_EUR); L.cash -= v; sms(who, 'Bin abgezogen worden. Das Päckchen ist weg' + (v ? ', ' + eur0(v) + ' aus der Kasse auch' : '') + '. ' + r.n + ' ist eben noch fremdes Revier.', 'bad'); return; }
   L.cash += runNet((r && revMine(r) ? RUN_EUR + 15 : RUN_EUR) + runBonus(who, l));          // the runner keeps his share
 }
-const lagerRev = l => { if (!revOn()) return ''; const r = revAt(l.x, l.y); return revMine(r) ? ' · ' + r.n + ': dein Revier, die Läufer sind sicher' : ' · ' + r.n + ': fremdes Revier, die Läufer werden abgezogen'; };
+const lagerRev = l => { if (!revOn()) return ''; const r = revAt(l.x, l.y); return revMine(r) ? ' · ' + r.n + ': dein Revier, die Läufer sind sicher' : ' · ' + r.n + ': fremdes Revier, die Läufer werden ständig abgezogen'; };
 const runDayEur = l => { const r = revOn() ? revAt(l.x, l.y) : null; return !r ? RUN_EUR : revMine(r) ? RUN_EUR + 15 : Math.round(RUN_EUR * .75); };
 
 /* ---------- HUD and maps ---------- */
@@ -7396,7 +7410,7 @@ const TIPS = {
   runner: ['Läufer einer Bande', 'Der rote Punkt ist ein Läufer der Bande. Abziehen bringt Ware und Geld und schwächt die Bande, aber ihre Abzieher kommen sofort.'],
   abz: ['Abzieher', 'Die Bande ist hinter dir her. Halt nicht an und lass dich nicht einkesseln, sonst nehmen sie dir Ware oder Geld ab. Nach einer Weile geben sie auf.'],
   atk: ['Angriff auf dein Revier', 'Eine Bande will ihr Revier zurück. Fahr zur roten Säule, bevor die Zeit abläuft. Verpasst du einen Angriff, wackelt das Revier, beim zweiten ist es weg.'],
-  inkasso: ['Mischas Inkasso', 'Die Frist für deine Schulden ist abgelaufen. Mischas Leute suchen dich. Bezahl an einem Ticker, dann ruft er sie zurück.'],
+  inkasso: ['Mischas Inkasso', 'Die Frist für deine Schulden ist abgelaufen. Mischas Leute suchen dich. Bezahl an einem Ticker oder bei Big M, dann ruft er sie zurück.'],
   mjob: ['Ein Auftrag von Mischa', 'Mischa hat Arbeit für dich. Fahr zur orangen Säule an seiner Garage. Seine Aufträge zahlen gut und bringen Respekt, haben aber immer einen Haken.'],
   favor: ['Ein Gefallen', 'Jemand steckt in der Klemme. Hol die Person ab, bevor die Zeit abläuft, und setz sie am Ziel ab, ohne Polizei im Nacken. Dann arbeitet sie für dich als Läufer.'],
   lager: ['Dein Lager', 'Ware einlagern, Läufer anstellen, Kasse abholen: Alles geht hier im Lager. Ganze Kisten gibt es bei Big M an der Prenzlauer Allee 34, er liefert direkt ins Lager.'],
@@ -7538,7 +7552,7 @@ function nightTip(why) {
   const s = G.stats;
   if (s.abz > 0) return 'Abgezogen worden: Bei Abziehern nicht anhalten. Sie geben nach einer Weile auf.';
   if (s.busts > 0) return 'Kontrolle: Bei Sternen erst abhängen, bis alle weg sind. Ware im Auto macht jede Kontrolle teuer.';
-  if (G.debt > 0) return 'Mischa wartet noch auf ' + eur0(G.debt) + '. Bezahl am Ticker vor Ablauf der Frist, sonst kommt das Inkasso.';
+  if (G.debt > 0) return 'Mischa wartet noch auf ' + eur0(G.debt) + '. Bezahl ' + (tickOff() ? 'bei Big M' : 'am Ticker') + ' vor Ablauf der Frist, sonst kommt das Inkasso.';
   if (s.fines > 0) return 'Bußgelder: Rote Ampeln und Blitzer kosten, und ab dem vierten Verstoß sucht dich die Polizei. Blitzerabwehr in der Garage hilft, und wer Dr. Schlupfloch im Rennen schlägt, zahlt nur noch die Hälfte.';
   if (G.dmg > 70) return 'Die Karre ist fast hin. Werkzeugkoffer aus der Werkstatt flicken sie unterwegs.';
   if (!s.deliv && P.night >= 1) return 'Lieferungen bringen am meisten: Ware beim Ticker holen, dann kommen Bestellungen aufs Handy.';
