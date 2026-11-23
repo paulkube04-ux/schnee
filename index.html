@@ -556,6 +556,9 @@ body.touch:has(#ph-offer:not([hidden])) #task { display: none; }
 body.touch #toasts, body.touch #task:not([hidden]) ~ #toasts, body.touch:has(#ph-offer:not([hidden])) #toasts { top: auto; left: auto; transform: none; right: calc(10px / var(--hz, 1)); bottom: calc(182px / var(--hz, 1)); width: 330px; align-items: flex-end; flex-direction: column-reverse; gap: 5px; }
 body.touch .toast { text-align: right; max-width: 330px; }
 body.touch .toast.ban { padding: 5px 14px 7px; } body.touch .toast.ban b { font-size: 20px; } body.touch .toast.ban span { font-size: 13px; }
+
+/* saver mode: no blur behind panels and cards, it costs a weak graphics chip a full extra pass every frame */
+body.spar * { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
 </style>
 </head>
 <body>
@@ -1326,7 +1329,7 @@ function mkMaterials() {
 }
 
 function initScene(canvas) {
-  SPAR = sparOn();                                    // weak graphics chip: no edge smoothing, plain pixel density, 30 frames a second
+  SPAR = sparOn(); document.body.classList.toggle('spar', SPAR);                                    // weak graphics chip: no edge smoothing, plain pixel density, 30 frames a second
   renderer = new THREE.WebGLRenderer({ canvas, antialias: !SPAR, powerPreference: SPAR ? 'default' : 'high-performance' });
   renderer.setPixelRatio(SPAR ? 1 : Math.min(window.devicePixelRatio || 1, 1.75));
   renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFShadowMap;
@@ -3225,7 +3228,8 @@ function dlgArrive() {
   });
 }
 function pay2(v, kind) { pay(v, kind); }
-function fine(v) { return pay(Math.round(v * (1 - .25 * (GAR.anwalt || 0))), 'fines'); }       // the lawyer on call takes a quarter off per level
+const anwalt = () => !!((P && P.sp && P.sp.anwalt) || GAR.anwalt);
+function fine(v) { return pay(Math.round(v * (anwalt() ? .5 : 1)), 'fines'); }       // your own lawyer (beaten in a race) halves fines, checks and arrests. A bank job is seized in full, he can't help there
 
 /* ---------- the side business ---------- */
 const stockNeed = () => G.orders.reduce((a, b) => a + b.qty, 0);
@@ -4326,6 +4330,7 @@ function hud() {
   } else jobRow('job-snow', '');
   if (G.race) jobRow('job-nav', '');                                    // the banner at the top shows the race
   else jobRow('job-nav', nv ? 'Navi: ' + (G.gpsPick ? mkLabel(nv) : ['', 'Ticker', 'Werkstatt', 'Späti'][G.gpsMode]) : '', nv ? m10(rt.nav && rt.nav.d) : '', -1);
+  if (nv && !G.race) $('job-nav').style.setProperty('--jc', MKCSS[nv.type] || '#b56bff');      // the stripe takes the colour of where you are headed, like the line on the road
   $('job-nav').classList.toggle('race', !!G.race); $('job-x').hidden = !(f || o || nv || G.race);
   // pointers at the screen edge, one per target that is out of view
   for (const k of ['taxi', 'snow', 'nav']) {
@@ -4790,8 +4795,12 @@ function frame(now) {
   if (G.mode !== 'play' && G.mode !== 'title' && G.cs && !$('hud').hidden) hud();          // money, goods, Mate: what you buy in a shop window shows at once, not only after closing it
   talkFrame(dt);
   placeSkyline(G.t);
+  // saver mode: behind a card, a dialog or the pause screen nothing moves, so the picture is drawn once and then left alone
+  const still = SPAR && G.mode !== 'play' && G.mode !== 'title' && G.mode !== 'garage';
+  if (still && _rm === G.mode) return; _rm = still ? G.mode : '';
   renderer.render(scene, camera);
 }
+let _rm = '';
 function boot() {
   fetch('map.json').then(r => { if (!r.ok) throw new Error('Karte: HTTP ' + r.status); return r.json(); }).then(d => {
     prepData(d); initScene($('gl')); buildWorld(); initGame(); requestAnimationFrame(frame); window.READY = 1;
@@ -4894,7 +4903,6 @@ const XUP = [
   { k: 'blitz', n: 'Blitzerabwehr', d: ['Blitzer auf der Karte, Warnton beim Anfahren', 'Reflektierendes Kennzeichen I: Rotlicht-Blitzer erwischen dich nicht mehr', 'Reflektierendes Kennzeichen II: kein Blitzer erwischt dich mehr'], p: [160, 450, 950] },
   { k: 'cup', n: 'Becherhalter', d: ['Platz für 3 Mate', 'Platz für 4 Mate', 'Platz für 5 Mate'], p: [80, 200, 450] },
   { k: 'tool', n: 'Werkzeugfach', d: ['Platz für 3 Werkzeugkoffer', 'Platz für 4 Werkzeugkoffer', 'Platz für 5 Werkzeugkoffer'], p: [100, 250, 500] },
-  { k: 'anwalt', n: 'Anwalt auf Abruf', d: ['Dr. Schlupfloch: Bußgelder und Strafen kosten ein Viertel weniger', 'Kanzlei Schlupfloch & Partner: Bußgelder und Strafen kosten nur noch die Hälfte'], p: [1500, 4000] },
 ];
 const PAINTS = [[0xe9dfb7, 'Taxibeige'], [0xc8302a, 'Feuerrot'], [0x1d2a4a, 'Nachtblau'], [0x26282e, 'Mattschwarz'], [0xd8dbe2, 'Perlweiß'], [0x2f6a4a, 'Britisch Grün'], [0xff4fa0, 'Pink'], [0xf2b324, 'Senfgelb'], [0x6a3fbf, 'Lila'], [0x7fb0a8, 'Mint'], [0xff6a1f, 'Orange'], [0x5a6e5a, 'Olivgrau']];
 const NEONS = [[0xff4fa0, 'Pink'], [0x3dffb5, 'Mint'], [0x3f7dff, 'Blau'], [0xff9f43, 'Orange'], [0xb56bff, 'Lila']];
@@ -5514,6 +5522,7 @@ const CHARS = {
   dieter: { n: 'Diesel-Dieter', bg: '#2d3327', skin: '#d6a680', hair: '#6a6a66', top: '#5a6e5a', hat: 'flat', hatc: '#4a4438', ex: ['stache', 'glasses'] },
   mischa: { n: 'Onkel Mischa', bg: '#3a2630', skin: '#dcae8c', hair: '#5c5c60', top: '#1d1d22', hat: 'flat', hatc: '#2b2b30', ex: ['stache', 'chain'] },
   steffi: { n: 'Stempel-Steffi', bg: '#2b1b40', skin: '#e6c3a6', hair: '#e9e4d4', top: '#141418', hat: 'pony', ex: ['shades', 'hoops'] },
+  anwalt: { n: 'Dr. Schlupfloch', bg: '#1c2230', skin: '#e3c0a2', hair: '#3a3530', top: '#2a3550', hat: 'slick', ex: ['glasses', 'scarf'] },
   kemal: { n: 'Kombi-Kemal', bg: '#3d3420', skin: '#bf8a62', hair: '#15110f', top: '#e9dfb7', hat: 'short', ex: ['beard'] },
 };
 function drawFace(cv, key) {
@@ -5656,6 +5665,11 @@ const SPECIAL = [
     pre: ['Renn-Rolf. Nürburgring ’94, dritter Platz in der Klasse bis 1600 Kubik. Seitdem fahr ick nur noch nachts.', 'Du gegen mich, lange Strecke. Wenn de gewinnst, kriegste meine Rennreifen und ’n Umschlag. Ick verlier aber nich.'],
     win: ['Dit jibt’s nich. Dit jibt’s einfach nich. Na jut. Die Reifen jehörn dir. Pfleg se.'], lose: 'Dritter Platz, sag ick doch. Du bist höchstens Vierter. Komm wieder.',
     give: () => { G.grip2 = Math.max(G.grip2, 2.2); earn(700); } },
+  { id: 'anwalt', who: 'Dr. Schlupfloch', ch: 'anwalt', car: 'benz', col: 0x8f959e, k: 1.02, hard: 1.2, x: -380, y: -120, night: 5, dist: [750, 1050], prize: 'Dr. Schlupfloch als dein Anwalt: Blitzer, Kontrollen und Festnahmen kosten nur noch die Hälfte',
+    call: ['Kanzlei Schlupfloch', 'Schlupfloch, Rechtsanwalt. Ich habe Ihre Akte gelesen, sie ist bemerkenswert dick. Ich vertrete nur Mandanten, die schneller sind als ich. Beweisen Sie es.'],
+    pre: ['Dr. Schlupfloch. Verkehrsrecht, Strafrecht, und was sonst so anfällt. Meine Mandanten zahlen nur die Hälfte, ich finde immer ein Formfehlerchen.', 'Mein Honorar ist ein Rennen. Gewinnen Sie, bin ich Ihr Anwalt, auf Lebenszeit und ohne Rechnung. Verlieren Sie, haben Sie heute Abend nichts verloren außer Ihrer Würde.'],
+    win: ['Einspruch abgelehnt, sozusagen. Na schön: Ab sofort vertrete ich Sie. Blitzer, Kontrollen, Festnahmen, ich halbiere das. Bei Banken allerdings … da kann ich nichts für Sie tun. Das wäre unseriös.'], lose: 'Das Urteil ist eindeutig. Revision ist möglich, morgen Nacht, gleiche Stelle.',
+    give: () => { banner('Freigeschaltet', 'Dein Anwalt', 'Blitzer, Verkehrskontrollen und Festnahmen kosten nur noch die Hälfte', 'day'); } },
   { id: 'baron', who: 'Der Baron', ch: 'baron', car: 'super', col: 0x101014, k: 1.12, hard: 1.28, x: 330, y: -1180, night: 7, dist: [1000, 1400], prize: '3.000 €',
     call: ['Unterdrückte Nummer', 'Guten Abend. Man nennt mich den Baron. Ich sammle schnelle Dinge und langweile mich. Unterhalten Sie mich.'],
     pre: ['Sie sind also das Taxi, von dem der ganze Bezirk redet. Reizend. Ich fahre etwas Italienisches. Sie fahren … das da.', 'Ein Rennen. Gewinnen Sie, gehören Ihnen dreitausend Euro. Verlieren Sie, haben Sie mir immerhin den Abend verkürzt.'],
@@ -7270,7 +7284,7 @@ function nightTip(why) {
   if (s.abz > 0) return 'Abgezogen worden: Bei Abziehern nicht anhalten. Sie geben nach einer Weile auf.';
   if (s.busts > 0) return 'Kontrolle: Bei Sternen erst abhängen, bis alle weg sind. Ware im Auto macht jede Kontrolle teuer.';
   if (G.debt > 0) return 'Mischa wartet noch auf ' + eur0(G.debt) + '. Bezahl am Ticker vor Ablauf der Frist, sonst kommt das Inkasso.';
-  if (s.fines > 0) return 'Bußgelder: Rote Ampeln und Blitzer kosten, und ab dem vierten Verstoß sucht dich die Polizei. Blitzerabwehr und Anwalt in der Garage helfen.';
+  if (s.fines > 0) return 'Bußgelder: Rote Ampeln und Blitzer kosten, und ab dem vierten Verstoß sucht dich die Polizei. Blitzerabwehr in der Garage hilft, und wer Dr. Schlupfloch im Rennen schlägt, zahlt nur noch die Hälfte.';
   if (G.dmg > 70) return 'Die Karre ist fast hin. Werkzeugkoffer aus der Werkstatt flicken sie unterwegs.';
   if (!s.deliv && P.night >= 1) return 'Lieferungen bringen am meisten: Ware beim Ticker holen, dann kommen Bestellungen aufs Handy.';
   return '';
