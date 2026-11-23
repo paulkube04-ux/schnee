@@ -3391,7 +3391,7 @@ class Goon extends Car {
     }
     g.visible = false; scene.add(g); this.g = g; this.on = false; this.stun = 0; this.re = 0; this.tx = 0; this.ty = 0; this.rev = 0; this.stuck = 0; this.leave = false; this.sayCd = 0; this.near = 999;
   }
-  spawn() { const s = segNear(140, 260, true); if (!s) return; const t = s.len / 2; this.x = s.ax + s.dx * t; this.y = s.ay + s.dy * t; this.a = Math.atan2(s.dy, s.dx); this.vx = this.vy = 0; this.on = true; this.g.visible = true; this.leave = false; this.stun = 0; }
+  spawn(a, b) { const s = segNear(a || 140, b || 260, true); if (!s) return; const t = s.len / 2; this.x = s.ax + s.dx * t; this.y = s.ay + s.dy * t; this.a = Math.atan2(s.dy, s.dx); this.vx = this.vy = 0; this.on = true; this.g.visible = true; this.leave = false; this.stun = 0; }
   kill() { this.on = false; this.g.visible = false; }
   update(dt) {
     if (!this.on) return;
@@ -3582,7 +3582,7 @@ function updPolice(dt) {
     G.redCd = G.t + 4;
     if (lightState(n, Math.abs(Math.cos(PL.a)) > Math.abs(Math.sin(PL.a)) ? 0 : 1, G.t) !== 2) break;
     if (offence(.7, 'Bei Rot drüber, direkt vor der Streife.')) break;
-    if (Math.random() < .2) { $('flash').classList.remove('go'); void $('flash').offsetWidth; $('flash').classList.add('go'); sfx('blitz'); if (G.up.radar >= 2) toast('Rotlicht-Blitzer: Das Kennzeichen reflektiert, auf dem Foto ist nur Weiß.', 'good'); else { fine(35); addPts(1, 'geblitzt bei Rot'); } }
+    if (Math.random() < .2 && G.up.radar < 2) { $('flash').classList.remove('go'); void $('flash').offsetWidth; $('flash').classList.add('go'); sfx('blitz'); fine(35); addPts(1, 'geblitzt bei Rot'); }      // with the reflective plate the red-light cameras simply never fire
     break;
   }
 }
@@ -3791,12 +3791,12 @@ function updBlitz() {
   const ps = PL.speed();
   for (const b of BLITZ) {
     const d = hyp(b.x - PL.x, b.y - PL.y);
-    if (G.up.radar) { if (d < 95 && !b.warned && ps > 15) { b.warned = true; sfx('radar'); toast('Blitzerabwehr: Blitzer voraus.', 'cop'); } if (d > 150) b.warned = false; }
+    if (G.up.radar && G.up.radar < 3) { if (d < 95 && !b.warned && ps > 15) { b.warned = true; sfx('radar'); toast('Blitzerabwehr: Blitzer voraus.', 'cop'); } if (d > 150) b.warned = false; }
     if (d > 30 || G.t < b.cd) continue;
     const s = b.s, u = (PL.x - s.ax) * s.dx + (PL.y - s.ay) * s.dy, lat = Math.abs((PL.x - s.ax) * s.dy - (PL.y - s.ay) * s.dx);
-    if (Math.abs(u - b.t) < 3.5 && lat < s.st.w + 2 && ps > 19.5) {
+    if (Math.abs(u - b.t) < 3.5 && lat < s.st.w + 2 && ps > 19.5 && G.up.radar < 3) {      // top level: no camera fires at you at all
       b.cd = G.t + 6; G.stats.blitz++; $('flash').classList.remove('go'); void $('flash').offsetWidth; $('flash').classList.add('go'); sfx('blitz');
-      if (G.up.radar >= 3) toast('Geblitzt, aber das Kennzeichen reflektiert. Kein Foto, kein Punkt.', 'good'); else { fine(30); addPts(1, 'geblitzt mit ' + Math.round(ps * 3.6) + ' km/h'); }
+      fine(30); addPts(1, 'geblitzt mit ' + Math.round(ps * 3.6) + ' km/h');
     }
   }
 }
@@ -4468,7 +4468,7 @@ function simulate(dt) {
     }
   }
   for (const g2 of GOONS) if (g2.on) { const i = carCar(PL, g2); if (i > 0) { imp = Math.max(imp, i * .8); if (i > 6) g2.stun = Math.max(g2.stun, 1.8); } }
-  for (const g2 of ABZL) if (g2.on) { const i = carCar(PL, g2); if (i > 0) { imp = Math.max(imp, i * .8); if (i > 6) g2.stun = Math.max(g2.stun, 1.8); } }
+  for (const g2 of ABZL) if (g2.on) { const i = carCar(PL, g2); if (i > 0) { imp = Math.max(imp, i * .8); if (i > 6) g2.stun = Math.max(g2.stun, 1.8); if (G.turbo <= 0 && !g2.leave && G.rev && G.rev.chase && G.rev.chase.cars.includes(g2) && !DLG) G.rev.chase.ram = true; } }      // any touch from the gang ends the chase (see revTick); on turbo you shake them off
   for (const c of COPS) if (c.on && c.type !== 'ww') { const i = carCar(PL, c); if (i > 0) { imp = Math.max(imp, i * .8 * clamp(c.mass / PL.mass, .5, 1.5)); copHit(i, c.type, c.mass); if (i * PL.mass / c.mass > 6) c.stun = Math.max(c.stun, Math.min(3.2, 1.2 * PL.mass)); if (i > 5 && c.mode !== 'chase') addHeat(1, 'Du hast eine Streife gerammt.'); } }
   if (G.race && G.race.opp.on) { const i = carCar(PL, G.race.opp); if (i > 0) imp = Math.max(imp, i * .6); }
   // a sharp turn at speed fools any patrol that is right behind you
@@ -5068,7 +5068,7 @@ function buildPlayerCar(prev) {
   const cone = new THREE.Mesh(coneGeo(), M_CONE); cone.position.x = S.L / 2 - 2.3; cone.renderOrder = 3; g.add(cone);
   if (t === 'taxi') { const sign = new THREE.Mesh(new THREE.BoxGeometry(.5, .24, 1), new THREE.MeshBasicMaterial({ color: 0xffd21f })); sign.position.set(S.rx + .4, S.rt + .16, 0); g.add(sign); }
   if (t === 'miles') { const sign = new THREE.Mesh(new THREE.BoxGeometry(.9, .03, 1.1), new THREE.MeshBasicMaterial({ color: 0x1fd6c0 })); sign.position.set(S.rx, S.rt + .065, 0); g.add(sign); for (const sg of [1, -1]) { const d = new THREE.Mesh(new THREE.BoxGeometry(1.3, .2, .03), new THREE.MeshBasicMaterial({ color: 0x1fd6c0 })); d.position.set(-.15, .62, sg * (hw + .012)); g.add(d); } }
-  const ring = new THREE.Mesh(RING_GEO, new THREE.MeshBasicMaterial({ color: 0xebe2bd, transparent: true, opacity: .42, depthTest: false, depthWrite: false })); ring.scale.setScalar(3.3); ring.position.y = .3; ring.renderOrder = 9; g.add(ring);
+  const ring = new THREE.Mesh(RING_GEO, new THREE.MeshBasicMaterial({ color: 0xebe2bd, transparent: true, opacity: .42, depthWrite: false }));      /* depth-tested: the car itself covers the ring */ ring.scale.setScalar(3.3); ring.position.y = .3; ring.renderOrder = 9; g.add(ring);
   // faint outline of the car wherever a house is in the way
   const sil = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: 0xebe2bd, transparent: true, opacity: .5, depthFunc: THREE.GreaterDepth, depthWrite: false })); sil.renderOrder = 8; g.add(sil);
   if (l.optik >= 1) {                                         // rear wing
@@ -6897,9 +6897,11 @@ function revTick(dt) {
   if (C) {
     C.t -= dt; let near = 1e9, close = false, any = false;
     for (const c of C.cars) if (c.on && !c.leave) { any = true; near = Math.min(near, c.near); if (c.near < 8.5) close = true; }
-    C.far = near > 95 ? C.far + dt : 0;
-    if (close && PL.speed() < 2.5) { C.box += dt; if (C.box > 1.2) { C.box = 0; dlgAbzug(); return; } } else C.box = 0;
-    if (!any) abzEnd(false); else if (C.t <= 0 || C.far > 5) abzEnd(true);
+    if (near < 45) C.met = true;                                     // shaking them off only counts once they have actually caught up
+    C.far = C.met && near > 130 ? C.far + dt : 0;
+    if (C.ram) { C.ram = false; PL.vx *= .2; PL.vy *= .2; CAM.shake = .9; sfx('crash', .8); dlgAbzug(); return; }      // they got you: no running any more
+    if (close && PL.speed() < 2.5) { C.box += dt; if (C.box > 1.2) { C.box = 0; dlgAbzug(); return; } } else C.box = 0;      // stopping is your own fault: same as being rammed
+    if (!any) abzEnd(false); else if (C.t <= 0 || C.far > 7) abzEnd(true);
   }
   if (R.q.length && G.t > 4 && !DLG && !G.race && !G.heist && !tutBusy()) { R.q.shift()(); return; }
   if (!revOn()) return;
@@ -6960,13 +6962,13 @@ function revDeliver(o) {
 /* ---------- Abzieher: a crew's cars that chase you until they have boxed you in or lost you ---------- */
 function abzCars(id) {
   const cr = CREWS[id];
-  if (!cr.cars) { cr.cars = [new Goon(cr.car, cr.col), new Goon(cr.car, cr.col)]; for (const c of cr.cars) { c.cry = cr.cry; c.css = hex6(cr.col); ABZL.push(c); } }
+  if (!cr.cars) { cr.cars = [new Goon(cr.car, cr.col), new Goon(cr.car, cr.col), new Goon(cr.car, cr.col)]; for (const c of cr.cars) { c.cry = cr.cry; c.css = hex6(cr.col); ABZL.push(c); } }
   return cr.cars;
 }
 function abzStart(id, rid, n, T) {
   const R = G.rev; if (R.chase) { R.chase.t = Math.max(R.chase.t, 30); return; }
-  const cars = abzCars(id).slice(0, n || 1); for (const c of cars) c.spawn();
-  R.chase = { crew: id, rid, t: T || 55, far: 0, box: 0, cars };
+  const cars = abzCars(id).slice(0, n || 1); for (const c of cars) for (let k = 0; k < 4 && !c.on; k++) c.spawn(60 + k * 30, 130 + k * 40);      // close by: they come from round the corner
+  R.chase = { crew: id, rid, t: T || 75, far: 0, box: 0, cars, met: false };
   toast('Abzieher ' + CREWS[id].gen + ' sind hinter dir her. Häng sie ab!', 'bad'); sfx('heat');
 }
 function abzEnd(escaped) {
@@ -6974,16 +6976,20 @@ function abzEnd(escaped) {
   if (!escaped) return;
   G.stats.abzEsc++; toast('Abgehängt. Das spricht sich rum.', 'good'); sfx('good'); addXp(15); revHit(revById(C.rid), 3);
 }
+/* caught by the gang: they win back 25 points in their territory */
+function abzLose(C) {
+  const r = revById(C.rid); if (!r || revMine(r)) return; const h0 = revHold(r), h = Math.min(100, h0 + 25); if (h <= h0) return;
+  P.rvh[r.id] = h; toast(r.n + ': Die Bande holt sich ein Viertel zurück. Sie hält wieder ' + h + ' %.', 'bad');
+}
 function dlgAbzug() {
-  const C = G.rev.chase; if (!C) return; const cr = CREWS[C.crew], cash = Math.round(Math.min(G.money, clamp(G.money * .3, 80, 600))), has = G.stock > 0;
-  const off = () => { for (const c of C.cars) c.leave = true; G.rev.chase = null; G.rev.aggro[C.crew] = 0; G.stats.abz++; laufEnd('Abgezogen.'); sfx('bad'); };
+  const C = G.rev.chase; if (!C) return; const cr = CREWS[C.crew], cash = Math.max(0, Math.round(G.money * 100) / 100), n = G.stock;
+  // caught: they take every package and every euro in the car. The warehouse stays yours
+  pay(cash, 'abzEur'); G.stock = 0; G.orders.slice().forEach(dropOrder); if (!n && cash <= 0) G.dmg = Math.min(95, G.dmg + 20 * G.cs.armor);
+  abzLose(C); for (const c of C.cars) c.leave = true; G.rev.chase = null; G.rev.aggro[C.crew] = 0; G.stats.abz++; sfx('bad');
   dialog({
-    kind: 'gang', tag: 'Abgezogen', title: cr.n, text: '„' + cr.abz + '“', meta: 'Kasse: ' + eur(G.money) + ' · Ware im Auto: ' + G.stock + ' · dein Lager finden sie nicht',
-    opts: [
-      { label: 'Ware rausrücken', sub: has ? (G.stock === 1 ? 'das eine Päckchen' : 'alle ' + G.stock + ' Päckchen') : 'Du hast nichts dabei', dis: !has, fn: () => { const n = G.stock; G.stock = 0; G.orders.slice().forEach(dropOrder); off(); toast(n + ' Päckchen weg. Sie lassen dich fahren.', 'bad'); } },
-      { label: 'Kohle rausrücken', sub: cash > 0 ? eur0(cash) : 'Du bist blank', dis: cash <= 0, fn: () => { pay(cash, 'abzEur'); off(); toast(eur0(cash) + ' weg. Sie lassen dich fahren.', 'bad'); } },
-      { label: 'Gas geben', sub: 'gibt Beulen, und sie bleiben dran', fn: () => { G.dmg = Math.min(95, G.dmg + 5 * G.cs.armor); CAM.shake = .8; sfx('crash', .7); for (const c of C.cars) if (c.on) c.stun = 2.4; PL.vx = Math.cos(PL.a) * 12; PL.vy = Math.sin(PL.a) * 12; C.t = Math.max(C.t, 28); } },
-    ]
+    kind: 'gang', tag: 'Erwischt', title: cr.n, text: '„' + cr.abz + '“',
+    meta: (n || cash > 0 ? 'Weg: ' + [n ? n + (n === 1 ? ' Päckchen' : ' Päckchen') : '', cash > 0 ? eur(cash) : ''].filter(Boolean).join(' und ') : 'Nichts dabei, also gab es Beulen') + ' · dein Lager finden sie nicht',
+    opts: [{ label: 'Weiterfahren', esc: 1, fn: () => { } }]
   });
 }
 
@@ -6996,7 +7002,7 @@ function dlgRunner(ref) {
       { label: 'Abziehen', sub: (n ? n + ' Päckchen und ' : '') + eur0(ref.cash) + ' · die Bande kommt sofort', fn: () => {
         G.stock += n; G.stats.rob++; G.stats.robEur += ref.cash; earn(ref.cash); rmMarker(ref.mk); revFigOff(ref.fig); ref.gone = true; ref.back = ref.n < 2 ? 150 : 1e9; say(PL.x, PL.y, pick(['Das gibt Ärger!', 'Ich sag’s der Chefin!', 'Ey! Das ist Diebstahl!', 'Das wirst du bereuen!']));
         if (G.seen) addHeat(1, 'Überfall vor den Augen der Streife.');
-        addXp(12); G.rev.aggro[r.crew] = (G.rev.aggro[r.crew] || 0) + 2; revHit(r, 5); if (!revMine(r)) abzStart(r.crew, r.id, 2);
+        addXp(12); G.rev.aggro[r.crew] = (G.rev.aggro[r.crew] || 0) + 2; revHit(r, 5); if (!revMine(r)) abzStart(r.crew, r.id, 3);
       } },
       { label: 'Weiterfahren', esc: 1, fn: () => { } },
     ]
