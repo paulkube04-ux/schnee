@@ -905,7 +905,7 @@ function prepData(d) {
     }
   }
   // collision edges
-  W.ex = []; W.ehash = new Map();
+  W.ex = []; W.ehash = new Map(); W.efn = []; W.fen = [];
 }
 function areaAt(x, y) {
   const c = Math.floor((x - W.box.x0) / AG), r = Math.floor((y - W.box.y0) / AG);
@@ -920,7 +920,11 @@ function addEdge(ax, ay, bx, by) {
   for (let ix = x0; ix <= x1; ix++) for (let iy = y0; iy <= y1; iy++) {
     const k = hkey(ix, iy); let arr = W.ehash.get(k); if (!arr) W.ehash.set(k, arr = []); arr.push(e);
   }
+  return e;
 }
+/* a fence panel: its own collision edge, and the pieces that make it up so it can be knocked flat */
+function fencePanel(ax, ay, bx, by, kind) { const p = { e: addEdge(ax, ay, bx, by), ax, ay, bx, by, kind, hs: [], down: false, t: 0, sg: 1, m0: null }; W.efn[p.e] = p; W.fen.push(p); return p; }
+const FEN = { car: null, k: 1, fall: [], st: 0 };
 function addColRing(r) { for (let i = 0, n = r.length, j = n - 2; i < n; j = i, i += 2) addEdge(r[j], r[j + 1], r[i], r[i + 1]); }
 function addColCircle(x, y, rad, n) { const r = []; for (let i = 0; i < n; i++) r.push(x + Math.cos(i / n * TAU) * rad, y + Math.sin(i / n * TAU) * rad); addColRing(r); }
 
@@ -936,7 +940,7 @@ function collide(c, r) {
       const e = arr[k] * 4, ax = E[e], ay = E[e + 1], ex = E[e + 2] - ax, ey = E[e + 3] - ay;
       let t = ((c.x - ax) * ex + (c.y - ay) * ey) / (ex * ex + ey * ey); t = t < 0 ? 0 : t > 1 ? 1 : t;
       let ox = c.x - (ax + ex * t), oy = c.y - (ay + ey * t); const d2 = ox * ox + oy * oy;
-      if (d2 < r * r && d2 > 1e-9) { const dd = Math.sqrt(d2), p = r - dd; ox /= dd; oy /= dd; c.x += ox * p; c.y += oy * p; nx += ox; ny += oy; hit = true; }
+      if (d2 < r * r && d2 > 1e-9) { if (FEN.car && W.efn[arr[k]] && fenceDown(W.efn[arr[k]])) continue; const dd = Math.sqrt(d2), p = r - dd; ox /= dd; oy /= dd; c.x += ox * p; c.y += oy * p; nx += ox; ny += oy; hit = true; }
     }
   }
   // edge of the playable district
@@ -1498,13 +1502,16 @@ function buildAreas() {
   // railway embankment between a street and the tracks: rough ground, a few scrubby trees, and a fence all the way round. No houses.
   for (const r of W.d.verge || []) {
     const rd = dec(r), n = rd.length / 2, xs = rd.filter((_, i) => !(i & 1)), ys = rd.filter((_, i) => i & 1);
-    polyFlat(GND.grass, [rd], .03, C('#33402f'), 9); addColRing(rd);
+    polyFlat(GND.grass, [rd], .03, C('#33402f'), 9);
     sampleArea({ r: rd, bb: [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)] }, 240, (x, y) => addTree(x, y, rr(.55, .9)));
     for (let i = 0; i < n; i++) {
       const ax = rd[2 * i], ay = rd[2 * i + 1], bx = rd[2 * ((i + 1) % n)], by = rd[2 * ((i + 1) % n) + 1], L = hyp(bx - ax, by - ay); if (L < 1.5) continue;
-      const a = Math.atan2(by - ay, bx - ax), mx = (ax + bx) / 2, my = (ay + by) / 2, k = Math.max(1, Math.round(L / 3.2));
-      for (const h of [.25, 1.05, 1.8]) I.deco.add(mx, my, h, a, L, h < .5 ? .3 : .07, .07, h < .5 ? 0x4a4c52 : 0x55665c);
-      for (let j = 0; j < k; j++) I.post.add(ax + (bx - ax) * j / k, ay + (by - ay) * j / k, 0, 0, .8, 1.95, .8, 0x55665c);
+      const a = Math.atan2(by - ay, bx - ax), k = Math.max(1, Math.round(L / 3.2));
+      for (let j = 0; j < k; j++) {                     // one panel between two posts at a time, so a car only takes out the bit it hits
+        const x0 = lerp(ax, bx, j / k), y0 = lerp(ay, by, j / k), x1 = lerp(ax, bx, (j + 1) / k), y1 = lerp(ay, by, (j + 1) / k), p = fencePanel(x0, y0, x1, y1, 3);
+        for (const h of [.25, 1.05, 1.8]) p.hs.push(I.deco.add((x0 + x1) / 2, (y0 + y1) / 2, h, a, L / k, h < .5 ? .3 : .07, .07, h < .5 ? 0x4a4c52 : 0x55665c));
+        p.hs.push(I.post.add(x0, y0, 0, 0, .8, 1.95, .8, 0x55665c));
+      }
     }
   }
   for (const r of W.d.isl) { const rd = dec(r); polyFlat(GND.isl, [rd], Y.isl, C('#2d4d3a'), 9); const c = centroid(rd); if (inBox(c[0], c[1])) addTree(c[0], c[1], 1.2); }
@@ -1572,16 +1579,19 @@ function buildOsm() {
   W.osmTrees = nt;
   const BU = [0x2c5237, 0x33603f, 0x284a34, 0x47683a, 0x2f5a44];
   for (let i = 0; i < o.bush.length; i += 2) { const x = o.bush[i] / 10, y = o.bush[i + 1] / 10; if (!inBox(x, y)) continue; const s = rr(.8, 1.5); I.bush.add(x, y, .4 * s, RW() * 6, 1.15 * s, .8 * s, 1.15 * s, rpick(BU)); }
-  // fences and hedges round playgrounds and pitches. They are solid; the gaps are where the paths go through
+  // fences and hedges round playgrounds and pitches. Walking pace bumps off them; anything faster knocks the panel it hits flat (fenceDown)
   for (const f of o.fence) {
     const r = dec(f[1]), hedge = f[0] & 1, tall = f[0] & 2, FC = 0x6c7482;
     for (let i = 0; i + 3 < r.length; i += 2) {
       const ax = r[i], ay = r[i + 1], bx = r[i + 2], by = r[i + 3], Ln = hyp(bx - ax, by - ay); if (Ln < .4) continue;
-      addEdge(ax, ay, bx, by);
-      const a = Math.atan2(by - ay, bx - ax), mx = (ax + bx) / 2, my = (ay + by) / 2; if (!inBox(mx, my)) continue;
-      if (hedge) { I.deco.add(mx, my, 0, a, Ln + .4, 1.15, .85, 0x2a4f36); continue; }
-      for (const h of tall ? [.25, 1.7, 3.3] : [.4, 1.02]) I.deco.add(mx, my, h, a, Ln, .06, .06, FC);
-      const k = Math.max(1, Math.round(Ln / 3)); for (let j = 0; j <= k; j++) I.post.add(ax + (bx - ax) * j / k, ay + (by - ay) * j / k, 0, 0, .6, tall ? 3.4 : 1.12, .6, FC);
+      const a = Math.atan2(by - ay, bx - ax), k = Math.max(1, Math.round(Ln / 3)), L = Ln / k;
+      for (let j = 0; j < k; j++) {
+        const x0 = lerp(ax, bx, j / k), y0 = lerp(ay, by, j / k), x1 = lerp(ax, bx, (j + 1) / k), y1 = lerp(ay, by, (j + 1) / k), mx = (x0 + x1) / 2, my = (y0 + y1) / 2;
+        const p = fencePanel(x0, y0, x1, y1, hedge ? 2 : tall ? 1 : 0); if (!inBox(mx, my)) continue;
+        if (hedge) { p.hs.push(I.deco.add(mx, my, 0, a, L + (j === 0 || j === k - 1 ? .25 : .05), 1.15, .85, 0x2a4f36)); continue; }
+        for (const h of tall ? [.25, 1.7, 3.3] : [.4, 1.02]) p.hs.push(I.deco.add(mx, my, h, a, L, .06, .06, FC));
+        p.hs.push(I.post.add(x0, y0, 0, 0, .6, tall ? 3.4 : 1.12, .6, FC)); if (j === k - 1) p.hs.push(I.post.add(x1, y1, 0, 0, .6, tall ? 3.4 : 1.12, .6, FC));
+      }
     }
   }
   // where a path or a paved square is, the car grips better than on the grass
@@ -2200,7 +2210,7 @@ class Car {
     this.a += this.steer * rate * dt * (vf >= 0 ? 1 : -1);
     this.vx = fx * vf + rx * vr; this.vy = fy * vf + ry * vr; this.vf = vf; this.vr = vr;
     this.x += this.vx * dt; this.y += this.vy * dt;
-    let nxs = 0, nys = 0, hit = false;
+    let nxs = 0, nys = 0, hit = false; FEN.car = Math.abs(vf) > 1.6 ? this : null; FEN.k = 1;
     for (let sg = 1; sg >= -1; sg -= 2) {
       const ox = fx * this.cl * sg, oy = fy * this.cl * sg; CIRC.x = this.x + ox; CIRC.y = this.y + oy;
       if (collide(CIRC, this.cr)) {
@@ -2208,6 +2218,7 @@ class Car {
         this.x += px; this.y += py; this.a += (ox * py - oy * px) * .1; nxs += COL.nx; nys += COL.ny; hit = true;
       }
     }
+    FEN.car = null; if (FEN.k < 1) { this.vx *= FEN.k; this.vy *= FEN.k; }      // a knocked-down fence costs a little speed, nothing more
     if (hit) {
       const l = hyp(nxs, nys) || 1; nxs /= l; nys /= l; const vn = this.vx * nxs + this.vy * nys;
       if (vn < 0) { this.vx -= vn * 1.22 * nxs; this.vy -= vn * 1.22 * nys; return -vn; }
@@ -2268,6 +2279,40 @@ function updParked(dt) {
     if (!p.moved) { p.moved = true; PARKED_MOVED.push(p); }
     if (p.h.c.mesh) { _pv.set(p.x, 0, -p.y); _pq.setFromAxisAngle(_py, p.a); _ps.set(p.sx, p.sy, p.sz || 1); _pm4.compose(_pv, _pq, _ps); p.h.c.mesh.setMatrixAt(p.h.i, _pm4); p.h.c.mesh.instanceMatrix.needsUpdate = true; }
     if (Math.abs(p.vx) + Math.abs(p.vy) + Math.abs(p.va) < .05) { p.on = false; p.vx = p.vy = p.va = 0; PARKED_ACTIVE.splice(k, 1); }
+  }
+}
+/* fences and hedges give way: a car faster than walking pace knocks the panel it hits flat and drives on, a little slower. Tall ball-court
+   fences brake a bit more, hedges most. They fall away from the car; the next night everything stands again */
+const FSLOW = [.9, .84, .8, .86], _fm = new THREE.Matrix4(), _fr = new THREE.Matrix4(), _ft = new THREE.Matrix4(), _fa = new THREE.Vector3();
+function fenceDown(p) {
+  const car = FEN.car, E = W.ex, o = p.e * 4, dx = p.bx - p.ax, dy = p.by - p.ay, mx = (p.ax + p.bx) / 2, my = (p.ay + p.by) / 2;
+  E[o] = E[o + 1] = E[o + 2] = 1e7; E[o + 3] = 1e7 + 1;                   // the edge leaves the collision grid's reach
+  if (!p.m0) p.m0 = p.hs.map(h => { const m = new THREE.Matrix4(); if (h.c.mesh) h.c.mesh.getMatrixAt(h.i, m); return m; });
+  p.down = true; p.t = 0; p.sg = car.vx * dy - car.vy * dx >= 0 ? 1 : -1; FEN.fall.push(p); FEN.k = Math.max(.7, FEN.k * FSLOW[p.kind]);
+  const near = car === PL ? 1 : Math.max(0, 1 - hyp(mx - PL.x, my - PL.y) / 45);
+  if (near > 0 && G.t - FEN.st > .06) { FEN.st = G.t; sfx(p.kind === 2 ? 'hecke' : 'zaun', near); }
+  if (near > 0 && p.kind !== 2) sparks(mx, my, 3);
+  if (car === PL) { CAM.shake = Math.max(CAM.shake, .1); rumble(.2, .35, 110); G.stats.zaun = (G.stats.zaun || 0) + 1; }
+  return true;
+}
+function fenceSet(p, th, sq) {                    // tip the panel about its foot line, a hedge is squashed as well
+  const mx = (p.ax + p.bx) / 2, my = (p.ay + p.by) / 2, L = hyp(p.bx - p.ax, p.by - p.ay) || 1;
+  _fa.set((p.bx - p.ax) / L, 0, -(p.by - p.ay) / L); _fr.makeRotationAxis(_fa, th); if (sq !== 1) _fr.multiply(_ft.makeScale(1, sq, 1));
+  _fr.premultiply(_ft.makeTranslation(mx, 0, -my)).multiply(_ft.makeTranslation(-mx, 0, my));
+  p.hs.forEach((h, i) => { const m = h.c.mesh; if (!m) return; _fm.multiplyMatrices(_fr, p.m0[i]); m.setMatrixAt(h.i, _fm); m.instanceMatrix.needsUpdate = true; });
+}
+function updFences(dt) {
+  for (let k = FEN.fall.length - 1; k >= 0; k--) {
+    const p = FEN.fall[k], hedge = p.kind === 2; p.t += dt; const u = Math.min(1, p.t / (hedge ? .22 : .45));
+    fenceSet(p, p.sg * (hedge ? .3 : 1.42) * u * u, hedge ? 1 - .72 * u : 1);
+    if (u >= 1) FEN.fall.splice(k, 1);
+  }
+}
+function fenceReset() {
+  FEN.fall.length = 0;
+  for (const p of W.fen) if (p.down) {
+    const o = p.e * 4; W.ex[o] = p.ax; W.ex[o + 1] = p.ay; W.ex[o + 2] = p.bx; W.ex[o + 3] = p.by; p.down = false;
+    p.hs.forEach((h, i) => { const m = h.c.mesh; if (m) { m.setMatrixAt(h.i, p.m0[i]); m.instanceMatrix.needsUpdate = true; } });
   }
 }
 /* what gets shoved away depends on weight far more than on speed: above 9 m/s of closing speed only 40 % of the rest is passed on */
@@ -2837,6 +2882,8 @@ function sfx(k, v) {
   else if (k === 'turbo') { nz(m, t, .7, .35, 'bandpass', 900); tone(m, 'sawtooth', 120, t, .6, .14, 480, 1600); tone(m, 'square', 880, t + .05, .25, .05, 1760); }
   else if (k === 'radar') { tone(m, 'square', 1250, t, .07, .06); tone(m, 'square', 1250, t + .12, .07, .06); tone(m, 'square', 1250, t + .24, .07, .06); }
   else if (k === 'pfand') { tone(m, 'triangle', 1760, t, .05, .07); tone(m, 'triangle', 2637, t + .05, .1, .07); }
+  else if (k === 'zaun') { nz(m, t, .16, .3 * v, 'bandpass', 2600); tone(m, 'triangle', 330, t, .22, .1 * v, 190); tone(m, 'square', 1180, t + .02, .07, .03 * v, 0, 3000); }
+  else if (k === 'hecke') { nz(m, t, .3, .28 * v, 'bandpass', 1300); nz(m, t + .05, .2, .12 * v, 'highpass', 4000); }
   else if (k === 'heat') { tone(m, 'sawtooth', 300, t, .16, .1, 600, 1500); tone(m, 'sawtooth', 300, t + .2, .16, .1, 600, 1500); }
 }
 const N = n => 55 * Math.pow(2, n / 12);
@@ -4412,7 +4459,7 @@ function simulate(dt) {
   G.stats.km += hyp(PL.x - x0, PL.y - y0) / 1000;
   if (G.mode !== 'play') return;
   stepWorld(dt, true); updPolice(dt); if (G.mode !== 'play') return;
-  updJobs(dt); checkMarkers(dt); KEY.use = false; updHeli(dt); updPfand(); updBlitz(); updFog(); updGoals(dt); updSkid(dt); updMafia(dt); updWater(dt); updParked(dt); updBiz(dt); updStory(dt); updEdgeWall();
+  updJobs(dt); checkMarkers(dt); KEY.use = false; updHeli(dt); updPfand(); updBlitz(); updFog(); updGoals(dt); updSkid(dt); updMafia(dt); updWater(dt); updParked(dt); updFences(dt); updBiz(dt); updStory(dt); updEdgeWall();
   { const ri = updRival(dt); if (ri > 4.5) crash(ri); }
   if (G.mode !== 'play' && G.mode !== 'dialog') return;
   place(PLG, PL.x, PL.y, PL.a); PLG.userData.tail.material = thr < 0 && PL.vf > 1 || hb ? PLG.userData.tb : PLG.userData.tn;
@@ -4452,7 +4499,7 @@ function startShift(admin) {
   for (const m of MK.slice()) if (['hail', 'dest', 'order', 'event', 'pin', 'race', 'fin', 'runner', 'fight', 'favor', 'mjob'].includes(m.type)) rmMarker(m);
   for (const p of HPED) p.kill(); for (const c of COPS) c.kill(); for (const t of TRAF) t.kill();
   const s = spotNear(30, 235); /* every night begins at home, in the Helmholtzkiez */ PL.x = s.x; PL.y = s.y; PL.a = Math.atan2(s.seg.dy, s.seg.dx) + (s.side < 0 ? Math.PI : 0); PL.vx = PL.vy = 0; PL.vf = PL.vr = 0;
-  revStart(); guideStart();                            // after last night's markers are gone and the car stands where the night begins
+  fenceReset(); revStart(); guideStart();              // after last night's markers are gone and the car stands where the night begins
   setCam(OPT.cam, true);
   CAM.x = PL.x; CAM.y = PL.y; CAM.yaw = PL.a; PLG.visible = true; place(PLG, PL.x, PL.y, PL.a); PLG.userData.ring.visible = PLG.userData.sil.visible = PLG.userData.cone.visible = true; povVis(); resetPfand(); HELI.on = false; HELI.g.visible = HELI.spot.visible = false;
   for (const g2 of GOONS) g2.kill(); for (const g2 of ABZL) g2.kill(); $('wet').style.opacity = 0;
